@@ -1,0 +1,25 @@
+---
+Name: colourpalettes
+---
+
+Toast\ColourPalettes\Models\Colour:
+  default_colours:
+    - primary: null
+    - secondary: null
+    - white: 'ffffff'
+    - black: '000000'
+    - off-white: null
+    - off-black: null
+
+SilverStripe\SiteConfig\SiteConfig:
+  css_folder_path: '/public/assets/styles/'
+  extensions:
+    - Toast\ColourPalettes\Extensions\SiteConfigExtension
+
+PageController:
+  extensions:
+    - Toast\ColourPalettes\Extensions\PageControllerExtension
+
+SilverStripe\ORM\DatabaseAdmin:
+  extensions:
+    - Toast\ColourPalettes\Extensions\DatabaseAdminExtension

@@ -1,0 +1,238 @@
+$label-width: 50px;
+$label-height: 50px;
+$label-margin: 0 10px 10px 0;
+$border-radius: 5px;
+$border-color: var(--cms-border-colour, #999);
+$checked-outline-color: #ddd;
+$checked-content-color: #000;
+$checked-text-shadow-color: #fff;
+
+.colourpalette {
+  ul {
+    overflow: hidden;
+    padding-left: 0;
+  }
+
+  li {
+    float: left;
+    list-style: none;
+
+    input {
+      display: none;
+    }
+
+    label {
+      cursor: pointer;
+      position: relative;
+      width: $label-width;
+      height: $label-height;
+      display: block;
+      margin: $label-margin;
+      box-shadow: inset 0 0 0 1px $border-color;
+      border-radius: $border-radius;
+
+      &:hover,
+      &:focus-visible {
+        span {
+          opacity: 1;
+        }
+      }
+
+      div {
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 50%;
+        z-index: 2;
+        left: 0;
+
+        &:nth-child(1) {
+          top: 50%;
+
+          &:hover {
+            ~ span {
+              top: 1px;
+              transform: translate(-50%, 0);
+            }
+          }
+        }
+
+        &:nth-child(2) {
+          top: 0;
+
+          &:hover {
+            ~ span {
+              top: 100%;
+              transform: translate(-50%, -100%);
+            }
+          }
+        }
+      }
+
+      span {
+        display: block;
+        position: absolute;
+        opacity: 0;
+        top: 50%;
+        left: 50%;
+        z-index: 1;
+        font-size: 10px;
+        line-height: 10px;
+        padding: 2px 3px;
+        font-weight: bold;
+        white-space: nowrap;
+        font-family: monospace;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        pointer-events: none;
+        border-radius: $border-radius * .66;
+        color: var(--cms-text-colour, #000);
+        box-shadow: 0 0 0 1px $border-color;
+        background-color: var(--cms-background-colour, #fff);
+        text-align: center;
+        min-width: 100%;
+        transform: translate(-50%, -50%);
+        transition:
+          opacity .2s ease 0s,
+          top .2s ease 0s,
+          transform .2s ease 0s;
+      }
+    }
+
+    input:checked + label {
+      &:after {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        line-height: $label-height;
+        text-align: center;
+        content: "\2714";
+        color: $checked-content-color;
+        text-shadow:
+          -1px -1px 0 $checked-text-shadow-color,
+          1px -1px 0 $checked-text-shadow-color,
+          -1px 1px 0 $checked-text-shadow-color,
+          1px 1px 0 $checked-text-shadow-color;
+      }
+    }
+
+    input[value="None"],
+    input[value="none"],
+    input[value="transparent"] {
+      + label {
+        &:before {
+          content: 'unset';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          opacity: .6;
+          font-size: 10px;
+          font-weight: bold;
+          text-transform: uppercase;
+          transform: translate(-50%, -50%);
+        }
+
+        span {
+          display: none;
+        }
+      }
+
+      &:checked+label:before {
+        content: none;
+      }
+    }
+  }
+
+  &.readonly li label {
+    cursor: default;
+  }
+}
+
+#Form_ItemEditForm_Contrast_Holder {
+  margin-top: 150px;
+}
+
+#Form_ItemEditForm_Contrast {
+  font-size: 0;
+
+  .radio {
+    display: inline-block;
+    padding-left: 0;
+    width: calc(50% - 10px);
+    margin-bottom: 10px;
+
+    &:nth-child(odd) {
+      margin-right: 10px;
+    }
+
+    &:nth-child(even) {
+      margin-left: 10px;
+    }
+
+    &.vallight {
+      color: #000;
+    }
+
+    &.valdark {
+      color: #fff;
+    }
+
+    label {
+      position: relative;
+      display: block;
+      font-size: 0;
+      width: 100%;
+      color: inherit;
+      max-width: 100%;
+      height: auto;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid var(--cms-border-colour);
+
+      input {
+        position: absolute;
+        display: block;
+        margin: 0;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        cursor: pointer;
+        -webkit-appearance: none;
+        outline: none !important;
+
+        &:checked {
+          box-shadow:
+            0 0 0 3px var(--cms-background-colour),
+            0 0 0 5px var(--cms-accent-colour),
+        }
+      }
+
+      &:before {
+        position: relative;
+        color: inherit;
+        font-weight: bold;
+        // Fill the content with lorem ipsum
+        content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit.';
+        font-size: 12px;
+      }
+
+      &:after {
+        content: attr(data-contrast);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        font-size: 18px;
+        margin-top: 5px;
+        font-weight: bold;
+        color: var(--cms-text-colour);
+      }
+    }
+  }
+}
+
+#describes-Form_ItemEditForm_Contrast {
+  margin-top: 25px;
+}

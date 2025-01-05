@@ -1,0 +1,51 @@
+{
+    "name": "theme-colours",
+    "version": "0.0.0",
+    "description": "Styles and scripts related to the theme-colours module",
+    "scripts": {
+        "watch": "webpack --mode development --progress --watch --config webpack.config.js",
+        "build": "webpack --mode production --progress --config webpack.config.js"
+    },
+    "author": "Emmanuel Davies",
+    "license": "MIT",
+    "devDependencies": {
+        "@babel/core": "^7.24.0",
+        "@babel/plugin-syntax-dynamic-import": "^7.2.0",
+        "@babel/preset-env": "^7.24.0",
+        "@soda/friendly-errors-webpack-plugin": "^1.8.1",
+        "autoprefixer": "^10.4.18",
+        "babel-loader": "^9.1.3",
+        "babel-preset-env": "^1.7.0",
+        "clean-webpack-plugin": "^4.0.0",
+        "concat": "^1.0.3",
+        "core-js": "^3.36.0",
+        "css-loader": "^6.10.0",
+        "css-minimizer-webpack-plugin": "^6.0.0",
+        "fs": "^0.0.1-security",
+        "glob": "^10.3.10",
+        "ignore-loader": "^0.1.2",
+        "image-webpack-loader": "^8.1.0",
+        "import-glob": "^1.5.0",
+        "import-glob-loader": "^1.1.0",
+        "mini-css-extract-plugin": "^2.8.1",
+        "node-sass": "^9.0.0",
+        "node-sass-glob-importer": "^5.3.3",
+        "path": "^0.12.7",
+        "postcss": "^8.4.35",
+        "postcss-critical-css": "meteora-digital/postcss-critical-css",
+        "postcss-loader": "^8.1.1",
+        "postcss-url": "^10.1.3",
+        "resolve-url-loader": "^5.0.0",
+        "sass-loader": "^14.1.1",
+        "terser-webpack-plugin": "^5.3.10",
+        "uglify-js": "^3.16.0",
+        "webpack": "^5.90.3",
+        "webpack-cli": "^5.1.4",
+        "webpack-concat-files-plugin": "^0.5.2",
+        "webpack-config-utils": "^2.3.1",
+        "webpack-merge": "^5.10.0"
+    },
+    "dependencies": {
+        "domobserverjs": "^0.0.3"
+    }
+}
