@@ -17,6 +17,7 @@ You can define default colours as well as colour groups in a yml config file
 ``` yml
 ---
 Name: colours
+After: colourpalettes
 ---
 
 Toast\ColourPalettes\Models\Colour:
