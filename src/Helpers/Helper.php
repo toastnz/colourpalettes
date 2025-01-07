@@ -43,6 +43,8 @@ class Helper
         $hexValues = [];
         $palette = [];
 
+        $groups = null;
+
         // Loop through the colours and add them to the palette array
         foreach ($colours as $colour) {
             // If the colour is transparent, skip it
@@ -51,11 +53,17 @@ class Helper
             // If the hexValue is already in the array, skip it
             if (in_array($colour->ColourValue, $hexValues)) continue;
 
-            // If a group is set, check if the colour is in the group
-            if ($group && $colour->ColourGroup != $group) continue;
+            // Grab the groups if we haven't already
+            if ($groups == null) {
+                $groups = $colour->getColourGroups();
+            }
 
-            // If there is no group, but the colour has a group, skip it
-            if (!$group && $colour->ColourGroup) continue;
+            if (count($groups) > 0) {
+                // If a group is set, check if the colour is in the group
+                if ($group && $colour->ColourGroup != $group) continue;
+                // If there is no group, but the colour has a group, skip it
+                if (!$group && $colour->ColourGroup) continue;
+            }
 
             // Add the colour value to the hexValues array
             $hexValues[] = $colour->ColourValue;
