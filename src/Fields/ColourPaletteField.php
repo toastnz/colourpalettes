@@ -12,14 +12,25 @@ class ColourPaletteField extends OptionsetField
 {
     public function __construct($name, $title = null, $source = [], $value = null)
     {
-        // Create an array to store the colour palette title and ID or CustomColourID
-        $palette = Helper::getColourPaletteArray();
+        // A default empty array for the colour palette
+        $palette = [];
+        // Add a 'None' option to the first position
+        $options = ['None' => ''];
 
-        // Add a 'None' option to the palette in the first position
-        $palette = ['None' => ''] + $palette;
+        // Check if the source is an array, and if it is empty
+        if (is_array($source) && empty($source)) {
+            // Create an array to store the colour palette title and ID or CustomColourID
+            $palette = Helper::getColourPaletteArray();
+        }
+
+        // If the source is a string
+        if (is_string($source)) {
+            // Get the colour palette array
+            $palette = Helper::getColourPaletteArray($source);
+        }
 
         // Set the source to the palette array
-        $source = $palette;
+        $source = array_merge($options, $palette);
 
         $this->setSource($source);
 
