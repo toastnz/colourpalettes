@@ -4,6 +4,8 @@ namespace Toast\ColourPalettes\Helpers;
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
+use SilverStripe\Security\Security;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\SiteConfig\SiteConfig;
 
@@ -15,6 +17,16 @@ class Helper
             return $siteConfig;
         }
         return;
+    }
+
+    static function isSuperAdmin()
+    {
+        if ($defaultUser = Environment::getEnv('SS_DEFAULT_ADMIN_USERNAME')) {
+            if ($currentUser = Security::getCurrentUser()) {
+                return $currentUser->Email == $defaultUser;
+            }
+        }
+        return false;
     }
 
     static function getColour($id)
