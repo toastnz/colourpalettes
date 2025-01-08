@@ -49,6 +49,21 @@ function updateSessionValue(input) {
   window.sessionStorage.setItem(name, value);
 }
 
+function loopInputs(fieldsets = [], func) {
+  if (!fieldsets || !fieldsets.length) return;
+  if (!func || typeof func !== 'function') return;
+
+  for (const fieldset of fieldsets) {
+    // Find all the inputs in the fieldset
+    const inputs = fieldset.querySelectorAll('input');
+
+    // Loop the images
+    for (const input of inputs) {
+      func(input);
+    }
+  }
+}
+
 // Observe the CMS for the themecolourpalette fieldsets
 CMSObserver.observe('ul.colourpalette', (fieldsets) => {
   // Set up an object to store the theme colours
@@ -62,62 +77,56 @@ CMSObserver.observe('ul.colourpalette', (fieldsets) => {
 
   const actionButtons = [...document.querySelectorAll('.cms-content-actions [type="submit"]')];
 
+  // If the user saves, update the session value
+  actionButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      loopInputs(fieldsets, (input) => {
+        if (!input.checked) return;
+        updateSessionValue(input);
+      });
+    });
+  });
+
   // Loop through the fieldsets
   (async () => {
-    for (const fieldset of fieldsets) {
-      // Find all the inputs in the fieldset
-      const inputs = fieldset.querySelectorAll('input');
+    loopInputs(fieldsets, (input) => {
+      // Find the input label
+      const label = input.labels[0];
+      // Find the input name
+      const name = input.name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 
-      // Loop the images
-      for (const input of inputs) {
-        // Find the input label
-        const label = input.labels[0];
-        // Find the input name
-        const name = input.name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+      // Get the computed background colour of the label as the value
+      const value = window.getComputedStyle(label).backgroundColor || 'rgba(0, 0, 0, 0)';
+      // Get the brightness attribute from the input
+      const brightnessAttribute = input.getAttribute('data-brightness');
+      // Calculate the brightness
+      const brightness = (brightnessAttribute) ? brightnessAttribute : getBrightess(value) > 130 ? 'light' : 'dark';
 
-        // Get the computed background colour of the label as the value
-        const value = window.getComputedStyle(label).backgroundColor || 'rgba(0, 0, 0, 0)';
-        // Get the brightness attribute from the input
-        const brightnessAttribute = input.getAttribute('data-brightness');
-        // Calculate the brightness
-        const brightness = (brightnessAttribute) ? brightnessAttribute : getBrightess(value) > 130 ? 'light' : 'dark';
+      // Get the session value
+      const sessionValue = getSessionValue(input);
 
-        // Get the session value
-        const sessionValue = getSessionValue(input);
+      // Check if the session value exists
+      if (sessionValue) {
+        // If the session value is the same as the input value, check the input
+        input.checked = (input.value === sessionValue);
+      };
 
-        // Check if the session value exists
-        if (sessionValue) {
-          // If the session value is the same as the input value, check the input
-          input.checked = (input.value === sessionValue);
-        };
+      const onChange = () => {
+        // If the input is not checked, return
+        if (!input.checked) return;
 
-        const onChange = () => {
-          // If the input is not checked, return
-          if (!input.checked) return;
+        // Set the value and brightness to the window object
+        window.ColourPalettes[name] = { value, brightness };
 
-          // if (e) updateSessionValue(input);
+        // fire a window event and pass the value and the brightness
+        window.dispatchEvent(new CustomEvent('ColourPaletteChanged', { detail: { input, name, value, brightness } }));
+      };
 
-          // Set the value and brightness to the window object
-          window.ColourPalettes[name] = { value, brightness };
+      // Add an event listener to the input
+      input.addEventListener('change', onChange);
 
-          // fire a window event and pass the value and the brightness
-          window.dispatchEvent(new CustomEvent('ColourPaletteChanged', { detail: { input, name, value, brightness } }));
-        };
-
-        // If the user saves, update the session value
-        actionButtons.forEach((button) => {
-          button.addEventListener('click', () => {
-            if (!input.checked) return;
-            updateSessionValue(input);
-          });
-        });
-
-        // Add an event listener to the input
-        input.addEventListener('change', onChange);
-
-        // Call the onChange function
-        onChange();
-      }
-    }
+      // Call the onChange function
+      onChange();
+    });
   })();
 });
