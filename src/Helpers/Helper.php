@@ -4,6 +4,8 @@ namespace Toast\ColourPalettes\Helpers;
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
+use SilverStripe\Security\Security;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\SiteConfig\SiteConfig;
 
@@ -11,10 +13,20 @@ class Helper
 {
     static function getCurrentSiteConfig()
     {
-        if($siteConfig = DataObject::get_one(SiteConfig::class)){
+        if ($siteConfig = DataObject::get_one(SiteConfig::class)) {
             return $siteConfig;
         }
         return;
+    }
+
+    static function isSuperAdmin()
+    {
+        if ($defaultUser = Environment::getEnv('SS_DEFAULT_ADMIN_USERNAME')) {
+            if ($currentUser = Security::getCurrentUser()) {
+                return $currentUser->Email == $defaultUser;
+            }
+        }
+        return false;
     }
 
     static function getColour($id)
@@ -33,7 +45,7 @@ class Helper
         return null;
     }
 
-    static function getColourPaletteArray()
+    static function getColourPaletteArray($group = null)
     {
         // Get the current site config ID
         $siteConfig = self::getCurrentSiteConfig();
@@ -43,6 +55,8 @@ class Helper
         $hexValues = [];
         $palette = [];
 
+        $groups = null;
+
         // Loop through the colours and add them to the palette array
         foreach ($colours as $colour) {
             // If the colour is transparent, skip it
@@ -50,6 +64,18 @@ class Helper
 
             // If the hexValue is already in the array, skip it
             if (in_array($colour->ColourValue, $hexValues)) continue;
+
+            // Grab the groups if we haven't already
+            if ($groups == null) {
+                $groups = $colour->getColourGroups();
+            }
+
+            if (count($groups) > 0) {
+                // If a group is set, check if the colour is in the group
+                if ($group && $colour->ColourGroup != $group) continue;
+                // If there is no group, but the colour has a group, skip it
+                if (!$group && $colour->ColourGroup) continue;
+            }
 
             // Add the colour value to the hexValues array
             $hexValues[] = $colour->ColourValue;
@@ -103,7 +129,7 @@ class Helper
     static function generateCSSFiles()
     {
         // Get the current site's config
-        if ($siteConfig = self::getCurrentSiteConfig()){
+        if ($siteConfig = self::getCurrentSiteConfig()) {
             // Get the site' ID and append to the css file name
             $styleID = ($siteConfig->ID == 1) ? 'mainsite' : 'subsite-' . $siteConfig->ID;
             // Get the site's colours
@@ -111,7 +137,7 @@ class Helper
 
             // If we have colours
             if ($colours) {
-                    //get folder path from config
+                //get folder path from config
                 $folderPath = Config::inst()->get(SiteConfig::class, 'css_folder_path');
                 // if folder doesnt exist, create it
                 if (!file_exists(Director::baseFolder() . $folderPath)) {

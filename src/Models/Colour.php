@@ -7,6 +7,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Security\Security;
 use SilverStripe\View\Requirements;
+use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\OptionsetField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\SiteConfig\SiteConfig;
@@ -23,6 +24,7 @@ class Colour extends DataObject
         'Contrast' => 'Varchar(30)',
         'CustomColourID' => 'Varchar(255)',
         'ColourPaletteID' => 'Varchar(30)',
+        'ColourGroup' => 'Varchar(255)',
         'SortOrder' => 'Int',
     ];
 
@@ -50,6 +52,7 @@ class Colour extends DataObject
             'SiteConfigs',
             'CustomColourID',
             'ColourPaletteID',
+            'ColourGroup',
             'Contrast'
         ]);
 
@@ -60,6 +63,16 @@ class Colour extends DataObject
         ]);
 
         if ($this->ID) {
+            if ($groups = $this->getColourGroups()) {
+                // If there is at least one group, add the dropdown field
+                if (count($groups) > 0) {
+                    $fields->addFieldsToTab('Root.Main', [
+                        DropdownField::create('ColourGroup', 'Select Colour Group', $groups)
+                            ->setEmptyString('Global')
+                    ]);
+                }
+            }
+
             $fields->addFieldsToTab('Root.Main', [
                 ColorField::create('Colour', 'Colour')
                     ->setReadOnly(!$this->canChangeColour())
@@ -127,7 +140,7 @@ class Colour extends DataObject
     {
         parent::requireDefaultRecords();
 
-        if($siteConfig = Helper::getCurrentSiteConfig()){
+        if ($siteConfig = Helper::getCurrentSiteConfig()) {
             foreach ($this->getDefaultColours() as $colour) {
                 $key = key($colour);
                 $value = $colour[$key];
@@ -202,13 +215,13 @@ class Colour extends DataObject
         }
 
         $hex = $this->Colour ?: 'ffffff';
-        $r = hexdec(substr($hex,0,2));
-        $g = hexdec(substr($hex,2,2));
-        $b = hexdec(substr($hex,4,2));
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
 
-        $yiq = (($r*299)+($g*587)+($b*114))/1000;
+        $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
 
-        return ( $yiq >= 130 ) ? 'light' : 'dark';
+        return ($yiq >= 130) ? 'light' : 'dark';
     }
 
     public function getColourCSS($target)
@@ -244,6 +257,20 @@ class Colour extends DataObject
     protected function getDefaultColours()
     {
         return $this->config()->get('default_colours') ?: [];
+    }
+
+    // A method to get the colour groups
+    public function getColourGroups()
+    {
+        $colourGroups = $this->config()->get('colour_groups') ?: [];
+
+        // Transform the array to use the title as the value
+        $dropdownOptions = [];
+        foreach ($colourGroups as $group) {
+            $dropdownOptions[$group] = $group;
+        }
+
+        return $dropdownOptions;
     }
 
     public function generateCSS()

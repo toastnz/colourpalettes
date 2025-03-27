@@ -1,0 +1,129 @@
+# ColourPalette Module
+This module allows you to manage and use colour palettes in your SilverStripe project.
+
+### Installation
+To install the module, use Composer:
+
+``` bash
+composer require toastnz/colourpalettes
+```
+
+### Adding and editing colours
+Colours can be managed in the CMS site config under 'Customisation' -> 'Colour Palettes'. Here you can add, edit and delete colours.
+
+### Colour palettes configuration
+You can define default colours as well as colour groups in a yml config file
+
+``` yml
+---
+Name: colours
+After: colourpalettes
+---
+
+Toast\ColourPalettes\Models\Colour:
+  colour_groups:
+    - Products
+  default_colours:
+    - primary: null
+    - secondary: null
+    - white: 'ffffff'
+    - black: '000000'
+    - off-white: null
+    - off-black: null
+
+```
+
+Colours with a value will be locked and cannot be deleted or edited in the CMS. Groups are optional, but can be used to separate colours into various colour palette fields.
+
+Adding colour groups will add a dropdown to each colour added in the site config, allowing you to assign a colour to a group.
+
+### Adding Colour Palette Field to a Class
+
+To add a colour palette field to a class, you can use the following code as an example:
+
+``` php
+use Toast\ColourPalettes\Models\ColourPalette;
+use Toast\ColourPalettes\Fields\ColourPaletteField;
+
+class YourClass extends DataObject
+{
+    private static $has_one = [
+        'PrimaryColour' => Colour::class,
+        'SecondaryColour' => Colour::class,
+    ];
+
+    public function updateCMSFields(FieldList $fields)
+    {
+        $fields->removeByName([
+            'PrimaryColourID',
+            'SecondaryColourID',
+        ]);
+
+        // Add the colour palette field to the class
+        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('PrimaryColour', 'Primary Colour'));
+
+        // Optionally add a group to the field as the 3rd parameter
+        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('SecondaryColour', 'Secondary Colour', 'Products'));
+    }
+}
+```
+### Template usage
+
+To use the colours in your templates, you can use the following code as an example:
+
+``` ss
+<!-- Add styles to the root -->
+<style>
+    :root {
+        {$PrimaryColour.RootVars}
+        {$SecondaryColour.RootVars}
+    }
+</style>
+```
+
+``` ss
+<!-- Add styles in a style tag scoped to this element -->
+<div class="my-element">
+    <p>lorem ipsum</p>
+
+    <style>
+        .my-element {
+            {$PrimaryColour.CSSVars}
+            {$SecondaryColour.CSSVars}
+        }
+    </style>
+</div>
+```
+
+### Using the colours in your CSS
+The colours will automatically generate their own CSS variables based on the name you give them on the class.
+For example, if you have a colour field called 'PrimaryColour', the following CSS variables will be generated:
+
+
+``` css
+/* $PrimaryColour.RootVars */
+:root {
+    --primary-colour: #000000;
+    --primary-colour-contrast: #ffffff;
+}
+
+/* PrimaryColour.CSSVars */
+.my-element {
+    --_primary-colour: #000000;
+    --_primary-colour-contrast: #ffffff;
+}
+```
+
+### Helper functions
+Sometimes you just want to know if the colour is light or dark:
+
+``` ss
+<!-- Check if the colour is light or dark -->
+<% if $PrimaryColour.IsLight %>
+    <p>Primary colour is light</p>
+<% end_if %>
+
+<% if $PrimaryColour.IsDark %>
+    <p>Primary colour is dark</p>
+<% end_if %>
+```

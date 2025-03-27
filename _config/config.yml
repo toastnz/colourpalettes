@@ -3,6 +3,8 @@ Name: colourpalettes
 ---
 
 Toast\ColourPalettes\Models\Colour:
+  colour_groups:
+    # - Products
   default_colours:
     - primary: null
     - secondary: null

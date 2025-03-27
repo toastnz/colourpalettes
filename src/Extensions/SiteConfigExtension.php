@@ -21,7 +21,11 @@ class SiteConfigExtension extends Extension
 
     public function updateCMSFields(FieldList $fields)
     {
-        if (Security::database_is_ready()) {
+        $fields->removeByName([
+            'Colours',
+        ]);
+
+        if (Security::database_is_ready() && Helper::isSuperAdmin()) {
             $coloursConfig = GridFieldConfig_RecordEditor::create(50);
             $coloursConfig->addComponent(GridFieldOrderableRows::create('SortOrder'));
             $coloursConfig->removeComponentsByType(GridFieldDeleteAction::class);
