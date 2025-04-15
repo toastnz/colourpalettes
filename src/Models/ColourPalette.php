@@ -71,6 +71,8 @@ class ColourPalette extends DataObject
 
     public function getCSSName()
     {
+        if (!$this->Title) return null;
+        // Convert the title to lowercase and replace spaces with dashes
         return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $this->Title));
     }
 
