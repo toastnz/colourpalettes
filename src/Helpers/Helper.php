@@ -8,6 +8,7 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Security\Security;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\SiteConfig\SiteConfig;
+use Toast\ColourPalettes\Models\Colour;
 
 class Helper
 {
@@ -137,6 +138,8 @@ class Helper
 
             // If we have colours
             if ($colours) {
+                $contrastColoursConfig = Config::inst()->get(Colour::class, 'contrast_colours');
+                $contrastColours = array_merge(...$contrastColoursConfig ?? []);
                 //get folder path from config
                 $folderPath = Config::inst()->get(SiteConfig::class, 'css_folder_path');
                 // if folder doesnt exist, create it
@@ -159,7 +162,9 @@ class Helper
                 // Loop through colours and add CSS vars
                 foreach ($colours as $colour) {
                     if ($colour->Colour) {
+                        $contrast = $colour->getColourIsDark() ? $contrastColours['on-dark'] : $contrastColours['on-light'];
                         $CSSVars .= '--colour-' . $colour->getColourID() . ': ' . $colour->getColourValue() . ';';
+                        $CSSVars .= '--colour-on-' . $colour->getColourID() . ': #' . $contrast . ';';
                     }
                 }
 

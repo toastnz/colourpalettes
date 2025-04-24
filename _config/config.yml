@@ -12,6 +12,9 @@ Toast\ColourPalettes\Models\Colour:
     - black: '000000'
     - off-white: null
     - off-black: null
+  contrast_colours:
+    - on-dark: 'ffffff'
+    - on-light: '000000'
 
 SilverStripe\SiteConfig\SiteConfig:
   css_folder_path: '/public/assets/styles/'
