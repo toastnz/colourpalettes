@@ -7,6 +7,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Security\Security;
 use SilverStripe\View\Requirements;
+use SilverStripe\Forms\ListboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\OptionsetField;
 use SilverStripe\Forms\RequiredFields;
@@ -24,7 +25,7 @@ class Colour extends DataObject
         'Contrast' => 'Varchar(30)',
         'CustomColourID' => 'Varchar(255)',
         'ColourPaletteID' => 'Varchar(30)',
-        'ColourGroup' => 'Varchar(255)',
+        'Groups' => 'Text',
         'SortOrder' => 'Int',
     ];
 
@@ -52,7 +53,7 @@ class Colour extends DataObject
             'SiteConfigs',
             'CustomColourID',
             'ColourPaletteID',
-            'ColourGroup',
+            'Groups',
             'Contrast'
         ]);
 
@@ -63,12 +64,14 @@ class Colour extends DataObject
         ]);
 
         if ($this->ID) {
-            if ($groups = $this->getColourGroups()) {
+            if ($groups = $this->getColourGroupsConfig()) {
                 // If there is at least one group, add the dropdown field
                 if (count($groups) > 0) {
+                    // Add a new group called "Global" to the array
+                    $groups = array_merge(['Global' => 'Global'], $groups);
                     $fields->addFieldsToTab('Root.Main', [
-                        DropdownField::create('ColourGroup', 'Select Colour Group', $groups)
-                            ->setEmptyString('Global')
+                        ListboxField::create('Groups', 'Groups', $groups)
+                            ->setDescription('Select the groups this colour belongs to. If left blank, it will be treated as a global colour.'),
                     ]);
                 }
             }
@@ -259,18 +262,23 @@ class Colour extends DataObject
         return $this->config()->get('default_colours') ?: [];
     }
 
-    // A method to get the colour groups
     public function getColourGroups()
     {
-        $colourGroups = $this->config()->get('colour_groups') ?: [];
+        return $this->Groups ? json_decode($this->Groups, true) : [];
+    }
+
+    // A method to get the colour groups
+    public function getColourGroupsConfig()
+    {
+        $colourGroupsConfig = $this->config()->get('colour_groups') ?: [];
 
         // Transform the array to use the title as the value
-        $dropdownOptions = [];
-        foreach ($colourGroups as $group) {
-            $dropdownOptions[$group] = $group;
+        $options = [];
+        foreach ($colourGroupsConfig as $group) {
+            $options[$group] = $group;
         }
 
-        return $dropdownOptions;
+        return $options;
     }
 
     public function generateCSS()

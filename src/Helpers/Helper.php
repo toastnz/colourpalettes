@@ -46,7 +46,7 @@ class Helper
         return null;
     }
 
-    static function getColourPaletteArray($group = null)
+    static function getColourPaletteArray($groupsToInclude = [])
     {
         // Get the current site config ID
         $siteConfig = self::getCurrentSiteConfig();
@@ -56,8 +56,6 @@ class Helper
         $hexValues = [];
         $palette = [];
 
-        $groups = null;
-
         // Loop through the colours and add them to the palette array
         foreach ($colours as $colour) {
             // If the colour is transparent, skip it
@@ -66,17 +64,21 @@ class Helper
             // If the hexValue is already in the array, skip it
             if (in_array($colour->ColourValue, $hexValues)) continue;
 
-            // Grab the groups if we haven't already
-            if ($groups == null) {
-                $groups = $colour->getColourGroups();
+            // This colour's groups
+            $colourGroups = $colour->getColourGroups();
+
+            // If the colourGroups is empty, add 'Global' to it
+            if (count($colourGroups) == 0) $colourGroups[] = 'Global';
+
+            $include = count($groupsToInclude) == 0 ? true : false;
+
+            // If there are any groups in the config
+            if (count($groupsToInclude) > 0) {
+                // If any colour groups match, set include to true
+                if (count(array_intersect($colourGroups, $groupsToInclude)) > 0) $include = true;
             }
 
-            if (count($groups) > 0) {
-                // If a group is set, check if the colour is in the group
-                if ($group && $colour->ColourGroup != $group) continue;
-                // If there is no group, but the colour has a group, skip it
-                if (!$group && $colour->ColourGroup) continue;
-            }
+            if (!$include) continue;
 
             // Add the colour value to the hexValues array
             $hexValues[] = $colour->ColourValue;
