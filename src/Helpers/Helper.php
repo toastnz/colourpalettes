@@ -53,6 +53,9 @@ class Helper
         // Get the colour palette for the current site
         $colours = $siteConfig->Colours();
 
+        // Sort the $colours by sort order
+        $colours = $colours->sort('SortOrder');
+
         $hexValues = [];
         $palette = [];
 
