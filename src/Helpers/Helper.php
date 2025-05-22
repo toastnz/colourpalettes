@@ -169,7 +169,7 @@ class Helper
                     if ($colour->Colour) {
                         $contrast = $colour->getColourIsDark() ? $contrastColours['on-dark'] : $contrastColours['on-light'];
                         $CSSVars .= '--colour-' . $colour->getColourID() . ': ' . $colour->getColourValue() . ';';
-                        $CSSVars .= '--colour-on-' . $colour->getColourID() . ': #' . $contrast . ';';
+                        $CSSVars .= '--colour-on-' . $colour->getColourID() . ': ' . $contrast . ';';
                     }
                 }
 

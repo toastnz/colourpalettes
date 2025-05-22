@@ -12,7 +12,7 @@ composer require toastnz/colourpalettes
 Colours can be managed in the CMS site config under 'Customisation' -> 'Colour Palettes'. Here you can add, edit and delete colours.
 
 ### Colour palettes configuration
-You can define default colours as well as colour groups in a yml config file
+You can define default colours as well as colour groups in a yml config file. Default colours need to be hex codes without the #, contract colours are more customisable, and can be set to other variables, therefore a # is required if you want to use a hex code.
 
 ``` yml
 ---
@@ -32,8 +32,8 @@ Toast\ColourPalettes\Models\Colour:
     - off-white: null
     - off-black: null
   contrast_colours:
-    - on-dark: 'ffffff'
-    - on-light: '000000'
+    - on-dark: '#ffffff'
+    - on-light: '#000000'
 
 ```
 
