@@ -36,6 +36,7 @@ class Colour extends DataObject
     private static $summary_fields = [
         'Title' => 'Title',
         'Colour.ColorCMS' => 'Colour',
+        'getGroupsSummary' => 'Groups',
         'CustomColourID' => 'Colour ID',
         'ID' => 'ID',
     ];
@@ -279,6 +280,18 @@ class Colour extends DataObject
         }
 
         return $options;
+    }
+
+    public function getGroupsSummary()
+    {
+        $groups = $this->getColourGroups();
+
+        if (empty($groups)) {
+            return 'Global';
+        }
+
+        // Join the groups with a comma
+        return implode(', ', $groups);
     }
 
     public function generateCSS()
