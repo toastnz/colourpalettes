@@ -44,3 +44,22 @@ export function calculateColorContrast(color1, color2) {
     return "Fail";
   }
 }
+
+export function rgbToHex(rgb) {
+  // Accepts either separate r, g, b or a string like "rgb(199, 107, 63)"
+  let r, g, b;
+  if (typeof rgb === 'string') {
+    // Extract numbers from the string
+    [r, g, b] = rgb.match(/\d+/g).map(Number);
+  } else {
+    // Assume arguments are r, g, b
+    [r, g, b] = arguments;
+  }
+  const toHex = (value) => {
+    const hex = value.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  console.log(`Converting RGB(${r}, ${g}, ${b}) to Hex`, `#${toHex(r)}${toHex(g)}${toHex(b)}`);
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
