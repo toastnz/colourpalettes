@@ -60,6 +60,5 @@ export function rgbToHex(rgb) {
     return hex.length === 1 ? '0' + hex : hex;
   };
 
-  console.log(`Converting RGB(${r}, ${g}, ${b}) to Hex`, `#${toHex(r)}${toHex(g)}${toHex(b)}`);
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
