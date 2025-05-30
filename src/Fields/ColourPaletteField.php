@@ -64,10 +64,15 @@ class ColourPaletteField extends OptionsetField
         $title = $this->name;
         $relation = $this->name . 'ID';
         $value = $this->value;
+        $recordID = $record->ID;
+        $className = $record->ClassName;
 
         if ($record->$title() && $colourPaletteID = $record->$title()->ID) {
             $colourPalette = ColourPalette::get()->byID($colourPaletteID);
             $colourPalette->setColourPalette($title, $value);
+            $colourPalette->ColourPaletteID = $value;
+            $colourPalette->ParentClass = $className;
+            $colourPalette->ParentID = $recordID;
             $colourPalette->write();
             return;
         }
@@ -77,6 +82,11 @@ class ColourPaletteField extends OptionsetField
 
         // Assign the values to the ColourPalette object
         $colourPalette->setColourPalette($title, $value);
+
+        // Set the values on the ColourPalette object
+        $colourPalette->ColourPaletteID = $value;
+        $colourPalette->ParentClass = $className;
+        $colourPalette->ParentID = $recordID;
 
         // Write the ColourPalette object
         $colourPalette->write();
