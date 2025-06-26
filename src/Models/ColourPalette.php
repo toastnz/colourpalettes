@@ -89,6 +89,7 @@ class ColourPalette extends DataObject
 
             $styles .= '--_' . $title . ': var(' . '--colour-' . $colourID . ');';
             $styles .= '--_' . $title . '-contrast: var(' . '--colour-on-' . $colourID . ');';
+            $styles .= '--_' . $title . '-on-contrast: var(' . '--colour-on-' . $colourID . '-contrast);';
         }
 
         return $styles;
