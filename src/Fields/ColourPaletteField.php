@@ -28,7 +28,20 @@ class ColourPaletteField extends OptionsetField
             $title = $name;
         }
 
+         // Ensure value is always scalar
+        if (is_object($value) && isset($value->ID)) {
+            $value = $value->ID;
+        }
+
         parent::__construct($name, $title, $source, $value);
+    }
+
+    public function setValue($value, $data = null)
+    {
+        if (is_object($value) && isset($value->ID)) {
+            $value = $value->ID;
+        }
+        return parent::setValue($value, $data);
     }
 
     public function Field($properties = [])
@@ -43,10 +56,18 @@ class ColourPaletteField extends OptionsetField
     {
         if ($this->form && $record = $this->form->getRecord()) {
             $name = $this->name;
-            $relation = $record->$name();
-            $colour = $relation->Colour();
-
-            return $colour->ColourPaletteID == $value;
+            $relationName = preg_replace('/ID$/', '', $name);
+            if (method_exists($record, $relationName)) {
+                $relation = $record->$relationName();
+                if ($relation && $relation->exists()) {
+                    $colour = $relation->Colour();
+                    $fieldValue = $colour ? $colour->ColourPaletteID : null;
+                    if (is_object($fieldValue) && isset($fieldValue->ID)) {
+                        $fieldValue = $fieldValue->ID;
+                    }
+                    return $fieldValue == $value;
+                }
+            }
         }
 
         return false;
