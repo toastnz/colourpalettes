@@ -54,23 +54,36 @@ class ColourPaletteField extends OptionsetField
 
     public function isChecked($value)
     {
-        if ($this->form && $record = $this->form->getRecord()) {
-            $name = $this->name;
-            $relationName = preg_replace('/ID$/', '', $name);
-            if (method_exists($record, $relationName)) {
-                $relation = $record->$relationName();
-                if ($relation && $relation->exists()) {
-                    $colour = $relation->Colour();
-                    $fieldValue = $colour ? $colour->ColourPaletteID : null;
-                    if (is_object($fieldValue) && isset($fieldValue->ID)) {
-                        $fieldValue = $fieldValue->ID;
-                    }
-                    return $fieldValue == $value;
+         if ($this->form && $record = $this->form->getRecord()) {
+            $fieldName = $this->name;
+            
+            // Try direct field value (e.g. FooterPrimaryColourID)
+            if (isset($record->$fieldName)) {
+                $fieldValue = $record->$fieldName;
+        
+                if (is_object($fieldValue) && isset($fieldValue->ID)) {
+                    return $fieldValue->ColourPaletteID == $value;
                 }
             }
         }
-
         return false;
+        // if ($this->form && $record = $this->form->getRecord()) {
+        //     $name = $this->name;
+        //     $relationName = preg_replace('/ID$/', '', $name);
+        //     if (method_exists($record, $relationName)) {
+        //         $relation = $record->$relationName();
+        //         if ($relation && $relation->exists()) {
+        //             $colour = $relation->Colour();
+        //             $fieldValue = $colour ? $colour->ColourPaletteID : null;
+        //             if (is_object($fieldValue) && isset($fieldValue->ID)) {
+        //                 $fieldValue = $fieldValue->ID;
+        //             }
+        //             return $fieldValue == $value;
+        //         }
+        //     }
+        // }
+
+        // return false;
     }
 
     // A function to return the whole Colour object for use in templates if needed
