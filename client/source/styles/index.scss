@@ -14,11 +14,19 @@ $checked-text-shadow-color: #fff;
   }
 
   li {
+    position: relative;
     float: left;
     list-style: none;
 
     input {
-      display: none;
+      position: absolute!important;
+      top: 0!important;
+      left: 0!important;
+      width: 0!important;
+      height: 0!important;
+      margin: 0!important;
+      padding: 0!important;
+      opacity: 0!important;
     }
 
     label {
@@ -196,12 +204,13 @@ $checked-text-shadow-color: #fff;
         margin: 0;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        width: 100%!important;
+        height: 100%!important;
         border-radius: inherit;
         cursor: pointer;
         -webkit-appearance: none;
         outline: none !important;
+        background: transparent!important;
 
         &:checked {
           box-shadow:
@@ -216,7 +225,8 @@ $checked-text-shadow-color: #fff;
         font-weight: bold;
         // Fill the content with lorem ipsum
         content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit.';
-        font-size: 12px;
+        font-size: 15px;
+        line-height: 1.7;
       }
 
       &:after {
