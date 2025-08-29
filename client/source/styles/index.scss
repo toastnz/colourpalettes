@@ -193,7 +193,7 @@ $checked-text-shadow-color: #fff;
       color: inherit;
       max-width: 100%;
       height: auto;
-      padding: 10px;
+      padding: 20px;
       cursor: pointer;
       border-radius: 4px;
       border: 1px solid var(--cms-border-colour);
@@ -222,10 +222,10 @@ $checked-text-shadow-color: #fff;
       &:before {
         position: relative;
         color: inherit;
-        font-weight: bold;
+        font-weight: 400;
         // Fill the content with lorem ipsum
         content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit.';
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.7;
       }
 
