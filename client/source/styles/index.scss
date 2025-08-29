@@ -178,11 +178,11 @@ $checked-text-shadow-color: #fff;
     }
 
     &.vallight {
-      color: #000;
+      color: var(--colourpalette-dark-text, #000);
     }
 
     &.valdark {
-      color: #fff;
+      color: var(--colourpalette-light-text, #fff);
     }
 
     label {

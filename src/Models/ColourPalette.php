@@ -71,6 +71,8 @@ class ColourPalette extends DataObject
 
     public function getCSSName()
     {
+        if (!$this->Title) return null;
+        // Convert the title to lowercase and replace spaces with dashes
         return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $this->Title));
     }
 
@@ -87,6 +89,7 @@ class ColourPalette extends DataObject
 
             $styles .= '--_' . $title . ': var(' . '--colour-' . $colourID . ');';
             $styles .= '--_' . $title . '-contrast: var(' . '--colour-on-' . $colourID . ');';
+            $styles .= '--_' . $title . '-on-contrast: var(' . '--colour-on-' . $colourID . '-contrast);';
         }
 
         return $styles;

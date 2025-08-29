@@ -8,6 +8,7 @@ use SilverStripe\Core\Environment;
 use SilverStripe\Security\Security;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\SiteConfig\SiteConfig;
+use Toast\ColourPalettes\Models\Colour;
 
 class Helper
 {
@@ -45,17 +46,18 @@ class Helper
         return null;
     }
 
-    static function getColourPaletteArray($group = null)
+    static function getColourPaletteArray($groupsToInclude = [])
     {
         // Get the current site config ID
         $siteConfig = self::getCurrentSiteConfig();
         // Get the colour palette for the current site
         $colours = $siteConfig->Colours();
 
+        // Sort the $colours by sort order
+        $colours = $colours->sort('SortOrder');
+
         $hexValues = [];
         $palette = [];
-
-        $groups = null;
 
         // Loop through the colours and add them to the palette array
         foreach ($colours as $colour) {
@@ -65,17 +67,21 @@ class Helper
             // If the hexValue is already in the array, skip it
             if (in_array($colour->ColourValue, $hexValues)) continue;
 
-            // Grab the groups if we haven't already
-            if ($groups == null) {
-                $groups = $colour->getColourGroups();
+            // This colour's groups
+            $colourGroups = $colour->getColourGroups();
+
+            // If the colourGroups is empty, add 'Global' to it
+            if (count($colourGroups) == 0) $colourGroups[] = 'Global';
+
+            $include = count($groupsToInclude) == 0 ? true : false;
+
+            // If there are any groups in the config
+            if (count($groupsToInclude) > 0) {
+                // If any colour groups match, set include to true
+                if (count(array_intersect($colourGroups, $groupsToInclude)) > 0) $include = true;
             }
 
-            if (count($groups) > 0) {
-                // If a group is set, check if the colour is in the group
-                if ($group && $colour->ColourGroup != $group) continue;
-                // If there is no group, but the colour has a group, skip it
-                if (!$group && $colour->ColourGroup) continue;
-            }
+            if (!$include) continue;
 
             // Add the colour value to the hexValues array
             $hexValues[] = $colour->ColourValue;
@@ -137,6 +143,8 @@ class Helper
 
             // If we have colours
             if ($colours) {
+                $contrastColoursConfig = Config::inst()->get(Colour::class, 'contrast_colours');
+                $contrastColours = array_merge(...$contrastColoursConfig ?? []);
                 //get folder path from config
                 $folderPath = Config::inst()->get(SiteConfig::class, 'css_folder_path');
                 // if folder doesnt exist, create it
@@ -159,7 +167,9 @@ class Helper
                 // Loop through colours and add CSS vars
                 foreach ($colours as $colour) {
                     if ($colour->Colour) {
+                        $contrast = $colour->getColourIsDark() ? $contrastColours['on-dark'] : $contrastColours['on-light'];
                         $CSSVars .= '--colour-' . $colour->getColourID() . ': ' . $colour->getColourValue() . ';';
+                        $CSSVars .= '--colour-on-' . $colour->getColourID() . ': ' . $contrast . ';';
                     }
                 }
 

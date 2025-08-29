@@ -10,24 +10,14 @@ use Toast\ColourPalettes\Models\ColourPalette;
 
 class ColourPaletteField extends OptionsetField
 {
+    // $source is an array of groups to get the colours from
     public function __construct($name, $title = null, $source = [], $value = null)
     {
-        // A default empty array for the colour palette
-        $palette = [];
         // Add a 'None' option to the first position
         $options = ['None' => ''];
 
-        // Check if the source is an array, and if it is empty
-        if (is_array($source) && empty($source)) {
-            // Create an array to store the colour palette title and ID or CustomColourID
-            $palette = Helper::getColourPaletteArray();
-        }
-
-        // If the source is a string
-        if (is_string($source)) {
-            // Get the colour palette array
-            $palette = Helper::getColourPaletteArray($source);
-        }
+        // Set the source to the colour palette array
+        $palette = Helper::getColourPaletteArray($source);
 
         // Set the source to the palette array
         $source = array_merge($options, $palette);
@@ -38,7 +28,20 @@ class ColourPaletteField extends OptionsetField
             $title = $name;
         }
 
+         // Ensure value is always scalar
+        if (is_object($value) && isset($value->ID)) {
+            $value = $value->ID;
+        }
+
         parent::__construct($name, $title, $source, $value);
+    }
+
+    public function setValue($value, $data = null)
+    {
+        if (is_object($value) && isset($value->ID)) {
+            $value = $value->ID;
+        }
+        return parent::setValue($value, $data);
     }
 
     public function Field($properties = [])
@@ -51,15 +54,36 @@ class ColourPaletteField extends OptionsetField
 
     public function isChecked($value)
     {
-        if ($this->form && $record = $this->form->getRecord()) {
-            $name = $this->name;
-            $relation = $record->$name();
-            $colour = $relation->Colour();
-
-            return $colour->ColourPaletteID == $value;
+         if ($this->form && $record = $this->form->getRecord()) {
+            $fieldName = $this->name;
+            
+            // Try direct field value (e.g. FooterPrimaryColourID)
+            if (isset($record->$fieldName)) {
+                $fieldValue = $record->$fieldName;
+        
+                if (is_object($fieldValue) && isset($fieldValue->ID)) {
+                    return $fieldValue->ColourPaletteID == $value;
+                }
+            }
         }
-
         return false;
+        // if ($this->form && $record = $this->form->getRecord()) {
+        //     $name = $this->name;
+        //     $relationName = preg_replace('/ID$/', '', $name);
+        //     if (method_exists($record, $relationName)) {
+        //         $relation = $record->$relationName();
+        //         if ($relation && $relation->exists()) {
+        //             $colour = $relation->Colour();
+        //             $fieldValue = $colour ? $colour->ColourPaletteID : null;
+        //             if (is_object($fieldValue) && isset($fieldValue->ID)) {
+        //                 $fieldValue = $fieldValue->ID;
+        //             }
+        //             return $fieldValue == $value;
+        //         }
+        //     }
+        // }
+
+        // return false;
     }
 
     // A function to return the whole Colour object for use in templates if needed
@@ -74,10 +98,15 @@ class ColourPaletteField extends OptionsetField
         $title = $this->name;
         $relation = $this->name . 'ID';
         $value = $this->value;
+        $recordID = $record->ID;
+        $className = $record->ClassName;
 
         if ($record->$title() && $colourPaletteID = $record->$title()->ID) {
             $colourPalette = ColourPalette::get()->byID($colourPaletteID);
             $colourPalette->setColourPalette($title, $value);
+            $colourPalette->ColourPaletteID = $value;
+            $colourPalette->ParentClass = $className;
+            $colourPalette->ParentID = $recordID;
             $colourPalette->write();
             return;
         }
@@ -87,6 +116,11 @@ class ColourPaletteField extends OptionsetField
 
         // Assign the values to the ColourPalette object
         $colourPalette->setColourPalette($title, $value);
+
+        // Set the values on the ColourPalette object
+        $colourPalette->ColourPaletteID = $value;
+        $colourPalette->ParentClass = $className;
+        $colourPalette->ParentID = $recordID;
 
         // Write the ColourPalette object
         $colourPalette->write();

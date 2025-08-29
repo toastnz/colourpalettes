@@ -12,7 +12,7 @@ composer require toastnz/colourpalettes
 Colours can be managed in the CMS site config under 'Customisation' -> 'Colour Palettes'. Here you can add, edit and delete colours.
 
 ### Colour palettes configuration
-You can define default colours as well as colour groups in a yml config file
+You can define default colours as well as colour groups in a yml config file. Default colours need to be hex codes without the #, contract colours are more customisable, and can be set to other variables, therefore a # is required if you want to use a hex code.
 
 ``` yml
 ---
@@ -23,6 +23,7 @@ After: colourpalettes
 Toast\ColourPalettes\Models\Colour:
   colour_groups:
     - Products
+    - Buttons
   default_colours:
     - primary: null
     - secondary: null
@@ -30,12 +31,17 @@ Toast\ColourPalettes\Models\Colour:
     - black: '000000'
     - off-white: null
     - off-black: null
+  contrast_colours:
+    - on-dark: '#ffffff'
+    - on-light: '#000000'
 
 ```
 
+Adding colour groups will add a listbox to each colour added in the site config, allowing you to assign a colour to a single group or multiple groups.
+
 Colours with a value will be locked and cannot be deleted or edited in the CMS. Groups are optional, but can be used to separate colours into various colour palette fields.
 
-Adding colour groups will add a dropdown to each colour added in the site config, allowing you to assign a colour to a group.
+Contrast colours are the colours used when generating the css variables, on-dark will be used if the colour is set to dark, and on-light will be used if the colour is set to light. Makes senses right?
 
 ### Adding Colour Palette Field to a Class
 
@@ -62,8 +68,8 @@ class YourClass extends DataObject
         // Add the colour palette field to the class
         $fields->addFieldToTab('Root.Main', ColourPaletteField::create('PrimaryColour', 'Primary Colour'));
 
-        // Optionally add a group to the field as the 3rd parameter
-        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('SecondaryColour', 'Secondary Colour', 'Products'));
+        // Optionally add a groups as an array to the field as the 3rd parameter
+        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('SecondaryColour', 'Secondary Colour', ['Products']));
     }
 }
 ```

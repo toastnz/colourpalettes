@@ -20,7 +20,7 @@ const CMSObserver = new DomObserverController();
 Functions
 ------------------------------------------------------------------*/
 
-import { getBrightess, calculateColorContrast } from 'scripts/components/functions';
+import { getBrightess, calculateColorContrast, rgbToHex } from 'scripts/components/functions';
 
 /*------------------------------------------------------------------
 Document setup
@@ -129,7 +129,7 @@ CMSObserver.observe('#Form_ItemEditForm_Colour', (inputs) => {
       // Find the parent (the label)
       const parent = example.parentNode;
       // Get the text colour hex value
-      const textColour = (example.value == 'dark') ? '#ffffff' : '#000000';
+      const textColour = rgbToHex(window.getComputedStyle(example).color);
       // Get the background colour hex value
       const backgroundColour = '#' + input.value;
       // Get the score
