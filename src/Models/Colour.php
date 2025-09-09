@@ -19,6 +19,7 @@ class Colour extends DataObject
 {
     private static $table_name = 'Colour';
 
+    //TODO: Update relationships
     private static $db = [
         'Title' => 'Varchar(255)',
         'Colour' => 'Color',
