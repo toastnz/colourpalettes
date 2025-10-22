@@ -10,7 +10,6 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\SiteConfig\SiteConfig;
 use Toast\ColourPalettes\Models\Colour;
 
-
 class Helper
 {
     /**

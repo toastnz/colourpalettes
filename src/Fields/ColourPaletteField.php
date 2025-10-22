@@ -32,6 +32,14 @@ class ColourPaletteField extends OptionsetField
         parent::__construct($name, $title, $source, $filter);
     }
 
+    public function setValue($value, $data = null)
+    {
+        if (is_object($value) && isset($value->ID)) {
+            $value = $value->ID;
+        }
+        return parent::setValue($value, $data);
+    }
+
     public function Field($properties = [])
     {
         Requirements::css('toastnz/colourpalettes: client/dist/styles/colour-palette-field.css');
