@@ -1,15 +1,7 @@
 const path = require('path');
-const fs = require('fs');
-const glob = require('glob');
-const webpack = require('webpack');
-const postcssUrl = require('postcss-url');
 const TerserPlugin = require("terser-webpack-plugin");
-const globImporter = require('node-sass-glob-importer');
-const postcssCriticalCSS = require('postcss-critical-css');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const { getIfUtils, removeEmpty } = require('webpack-config-utils');
 const FriendlyErrorsWebpackPlugin = require('@soda/friendly-errors-webpack-plugin');
 
 const stats = {
@@ -30,7 +22,7 @@ const stats = {
 };
 
 // The main directory (outside the webpack folder)
-const dir = path.resolve(__dirname, '../');
+const dir = path.resolve(__dirname, './');
 // Our aliases
 const aliases = {
   'styles': path.resolve(__dirname, './client/source/styles/'),
@@ -47,7 +39,9 @@ const app = {
     path: path.resolve(__dirname, './client/dist/scripts'),
     filename: '[name].js',
     chunkFilename: 'components/[chunkhash].js',
+    clean: true,
   },
+  plugins: [],
   resolve: { alias: aliases },
 };
 
@@ -61,10 +55,11 @@ const configs = [];
 
 [app].forEach((config) => {
   configs.push((env, argv) => {
-    const { ifProduction } = getIfUtils(argv.mode);
+    const isProduction = argv.mode === 'production';
+    const isDevelopment = !isProduction;
 
     return {
-      mode: ifProduction('production', 'development'),
+      mode: isProduction ? 'production' : 'development',
       stats,
       devtool: 'source-map',
       entry: config.entries,
@@ -76,7 +71,7 @@ const configs = [];
             test: /\.js$/,
             exclude: /node_modules/,
             use: [
-              { loader: 'babel-loader', options: { sourceMap: ifProduction(false, true) } },
+              { loader: 'babel-loader', options: { sourceMap: isDevelopment } },
             ],
           },
           {
@@ -86,16 +81,13 @@ const configs = [];
               {
                 loader: 'css-loader',
                 options: {
-                  sourceMap: ifProduction(false, true),
+                  sourceMap: isDevelopment,
                   url: false,
                 }
               },
               {
                 loader: 'sass-loader', options: {
-                  sourceMap: ifProduction(false, true),
-                  sassOptions: {
-                    importer: globImporter()
-                  },
+                  sourceMap: isDevelopment,
                 }
               },
             ]
@@ -110,14 +102,13 @@ const configs = [];
           new CssMinimizerPlugin()
         ]
       },
-      plugins: removeEmpty([
-        new CleanWebpackPlugin(),
+      plugins: [
         new FriendlyErrorsWebpackPlugin(),
         new MiniCssExtractPlugin({
           filename: '../styles/[name].css',
           chunkFilename: '[name].css'
         }),
-      ]),
+      ].filter(Boolean),
     }
   });
 });

@@ -20,7 +20,7 @@ const CMSObserver = new DomObserverController();
 Functions
 ------------------------------------------------------------------*/
 
-import { getBrightess, calculateColorContrast } from 'scripts/components/functions';
+import { getBrightess, calculateColorContrast, rgbToHex } from 'scripts/components/functions';
 
 /*------------------------------------------------------------------
 Document setup
@@ -114,12 +114,12 @@ CMSObserver.observe('ul.colourpalette', (fieldsets) => {
 });
 
 // Look for the theme colour inputs
-CMSObserver.observe('#Form_ItemEditForm_Colour', (inputs) => {
+CMSObserver.observe('#Form_ItemEditForm_HexValue', (inputs) => {
   // Grab the colour input
   const input = inputs[0];
 
   // Next find the inputs inside of this element #Form_ItemEditForm_ThemeColourTextColour
-  const examples = [...document.querySelectorAll('#Form_ItemEditForm_Contrast input')];
+  const examples = [...document.querySelectorAll('#Form_ItemEditForm_ContrastColour input')];
 
   // When the input changes
   const onChange = () => {
@@ -129,7 +129,7 @@ CMSObserver.observe('#Form_ItemEditForm_Colour', (inputs) => {
       // Find the parent (the label)
       const parent = example.parentNode;
       // Get the text colour hex value
-      const textColour = (example.value == 'dark') ? '#ffffff' : '#000000';
+      const textColour = rgbToHex(window.getComputedStyle(example).color);
       // Get the background colour hex value
       const backgroundColour = '#' + input.value;
       // Get the score
@@ -138,7 +138,7 @@ CMSObserver.observe('#Form_ItemEditForm_Colour', (inputs) => {
       parent.style.backgroundColor = backgroundColour;
 
       // Set an attribute on the parent to show the accessibility score
-      parent.setAttribute('data-contrast', 'Accessibility score: ' + score);
+      parent.setAttribute('data-contrast', score);
     });
   };
 

@@ -93,7 +93,10 @@ CMSObserver.observe('ul.colourpalette', (fieldsets) => {
       // Find the input label
       const label = input.labels[0];
       // Find the input name
-      const name = input.name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+      const name = input.name
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .toLowerCase()
+        .replace(/-id$/, '');
 
       // Get the computed background colour of the label as the value
       const value = window.getComputedStyle(label).backgroundColor || 'rgba(0, 0, 0, 0)';

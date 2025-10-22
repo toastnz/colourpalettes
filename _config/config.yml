@@ -1,22 +1,25 @@
 ---
-Name: colourpalettes
+Name: toastnz-colourpalettes
 ---
 
 Toast\ColourPalettes\Models\Colour:
   colour_groups:
     # - Products
   default_colours:
-    - primary: null
-    - secondary: null
-    - white: 'ffffff'
-    - black: '000000'
-    - off-white: null
-    - off-black: null
+    # - primary: null
+    # - secondary: null
+    # - white: 'ffffff'
+    # - black: '000000'
+    # - off-white: null
+    # - off-black: null
+  contrast_colours:
+    - on-dark: '#ffffff'
+    - on-light: '#000000'
 
 SilverStripe\SiteConfig\SiteConfig:
   css_folder_path: '/public/assets/styles/'
   extensions:
-    - Toast\ColourPalettes\Extensions\SiteConfigExtension
+    - Toast\ColourPalettes\Extensions\SiteConfigColourExtension
 
 PageController:
   extensions:
