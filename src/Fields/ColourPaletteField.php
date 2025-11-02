@@ -101,14 +101,16 @@ class ColourPaletteField extends OptionsetField
         $recordID = $record->ID;
         $className = $record->ClassName;
 
-        if ($record->$title() && $colourPaletteID = $record->$title()->ID) {
+         if ($record->$title() && $colourPaletteID = $record->$title()->ID) {
             $colourPalette = ColourPalette::get()->byID($colourPaletteID);
-            $colourPalette->setColourPalette($title, $value);
-            $colourPalette->ColourPaletteID = $value;
-            $colourPalette->ParentClass = $className;
-            $colourPalette->ParentID = $recordID;
-            $colourPalette->write();
-            return;
+            if($colourPalette && $colourPalette->exists() && $colourPalette->ParentID === $recordID){ 
+                $colourPalette->setColourPalette($title, $value);
+                $colourPalette->ColourPaletteID = $value;
+                $colourPalette->ParentClass = $className;
+                $colourPalette->ParentID = $recordID;
+                $colourPalette->write();
+                return;
+            }
         }
 
         // Create a new ColourPalette object
