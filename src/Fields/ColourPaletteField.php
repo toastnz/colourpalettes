@@ -94,6 +94,10 @@ class ColourPaletteField extends OptionsetField
 
     public function saveInto(DataObjectInterface $record)
     {
+        // if record in db
+        if(!$record || !$record->exists()){
+            return;
+        }
         // Get the values from the selected colour option that we want
         $title = $this->name;
         $relation = $this->name . 'ID';
