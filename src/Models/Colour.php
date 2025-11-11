@@ -389,12 +389,14 @@ class Colour extends DataObject
         return ($this->CSSName) ?? $this->ID;
     }
 
-    public function inheritColourFromReference()
+    public function inheritColourFromReference($write = false)
     {
         // Make sure this colour is a theme colour
         if (!$this->isThemeColour()) return;
         // Check if there is a reference colour set
         if (!$this->ReferenceColourID) return;
+        // Prevent self-referencing
+        if ($this->ReferenceColourID == $this->ID) return;
 
         // Get the reference colour
         $referenceColour = $this->ReferenceColour();
@@ -402,9 +404,20 @@ class Colour extends DataObject
         // If there is no reference colour, return
         if (!$referenceColour || !$referenceColour->exists()) return;
 
+        $oldHexValue = $this->HexValue;
+        $oldContrastColour = $this->ContrastColour;
+
         // Inherit the values from the reference colour
         $this->HexValue = $referenceColour->HexValue;
         $this->ContrastColour = $referenceColour->ContrastColour;
+
+        // Return here if we are not writing
+        if (!$write) return;
+        // Only write if there are changes
+        if ($this->HexValue === $oldHexValue && $this->ContrastColour === $oldContrastColour) return;
+
+        // Write the changes
+        $this->write();
     }
 
     public function onBeforeWrite()
@@ -430,8 +443,7 @@ class Colour extends DataObject
         $referencingColours = self::get()->filter('ReferenceColourID', $this->ID);
 
         foreach ($referencingColours as $colour) {
-            $colour->inheritColourFromReference();
-            $colour->write();
+            $colour->inheritColourFromReference(true);
         }
 
         $this->generateCSS();
