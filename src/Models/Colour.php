@@ -449,6 +449,21 @@ class Colour extends DataObject
         $this->generateCSS();
     }
 
+    public function onBeforeDelete()
+    {
+        parent::onBeforeDelete();
+
+        // Loop through all the other colours, and check if any are referencing this one
+        $referencingColours = self::get()->filter('ReferenceColourID', $this->ID);
+
+        foreach ($referencingColours as $colour) {
+            $colour->ReferenceColourID = null;
+            $colour->HexValue = null;
+            $colour->ContrastColour = null;
+            $colour->write();
+        }
+    }
+
     // Make sure we regenerate the CSS after a write is skipped
     public function onAfterSkippedWrite()
     {
