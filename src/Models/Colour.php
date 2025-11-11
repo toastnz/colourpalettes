@@ -24,7 +24,7 @@ class Colour extends DataObject
         'Title'          => 'Varchar(255)',
         'HexValue'       => Color::class,
         'CSSName'        => 'Varchar(255)',
-        'Colour'        =>   'Color',// Legacy field, to be removed in future
+        'Colour'        =>   'Color', // Legacy field, to be removed in future
         'CustomColourID' => 'Varchar(255)', // Legacy field, to be removed in future
         'Groups'         => 'Text',
         'ContrastColour' => 'Varchar(8)',
@@ -78,7 +78,8 @@ class Colour extends DataObject
         ]);
 
         if ($this->HexValue) {
-            $fields->insertBefore('HexValue',
+            $fields->insertBefore(
+                'HexValue',
                 OptionsetField::create('ContrastColour', 'Select the option with the highest contrast', [
                     'light' => 'Light',
                     'dark' => 'Dark'
@@ -175,9 +176,9 @@ class Colour extends DataObject
 
         // 1. Migrate CustomColourID to CSSName if needed
         if (self::singleton()->hasField('CustomColourID') && self::singleton()->hasField('Colour')) {
-            $toMigrate = self::get()->filter([ 'CSSName' => null ])->exclude([ 'CustomColourID' => null ]);
+            $toMigrate = self::get()->filter(['CSSName' => null])->exclude(['CustomColourID' => null]);
             foreach ($toMigrate as $legacy) {
-                if(!$legacy->Colour){
+                if (!$legacy->Colour) {
                     continue;
                 }
                 $legacy->CSSName = $legacy->CustomColourID;
@@ -245,7 +246,7 @@ class Colour extends DataObject
         }
         $hex = preg_replace('/[^a-fA-F0-9]/', '', (string)$this->HexValue);
         if (strlen($hex) === 3) {
-            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
         }
         if (strlen($hex) !== 6) {
             return 'light'; // fallback
@@ -424,6 +425,14 @@ class Colour extends DataObject
     public function onAfterWrite()
     {
         parent::onAfterWrite();
+
+        // Loop through all the other colours, and check if any are referencing this one
+        $referencingColours = self::get()->filter('ReferenceColourID', $this->ID);
+
+        foreach ($referencingColours as $colour) {
+            $colour->inheritColourFromReference();
+            $colour->write();
+        }
 
         $this->generateCSS();
     }
