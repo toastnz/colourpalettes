@@ -28,3 +28,7 @@ PageController:
 SilverStripe\ORM\DatabaseAdmin:
   extensions:
     - Toast\ColourPalettes\Extensions\DatabaseAdminExtension
+
+SilverStripe\Control\Controller:
+  extensions:
+    - Toast\ColourPalettes\Extensions\ControllerExtension
