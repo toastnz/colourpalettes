@@ -230,7 +230,7 @@ class Colour extends DataObject
     /**
      * Returns true if the colour is bright/light.
      */
-    public function isBright(): bool
+    public function isLight(): bool
     {
         return $this->getBrightness() === 'light';
     }

@@ -52,19 +52,18 @@ class ControllerExtension extends Extension
         return $this->isValidColour($colour) ? $colour : null;
     }
 
-    public function getColourRGBFromID($colourID)
+    public function getColourRGBArrayFromNameOrID($colourNameOrID)
     {
-        // Get the Colour with this ID
-        $colour = $this->getColourByID($colourID);
+        $colour = is_numeric($colourNameOrID) ? $this->getColourByID($colourNameOrID) : $this->getColourByName($colourNameOrID);
 
         if (!$colour) return null;
 
         return sscanf($colour->Value, "#%02x%02x%02x");
     }
 
-    public function getLightenColour($colourID, $amount = 0)
+    public function getLightenColour($colourNameOrID, $amount = 0)
     {
-        $rgb = $this->getColourRGBFromID($colourID);
+        $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
 
         if (!$rgb) return null;
 
@@ -79,9 +78,9 @@ class ControllerExtension extends Extension
         return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
     }
 
-    public function getDarkenColour($colourID, $amount = 0)
+    public function getDarkenColour($colourNameOrID, $amount = 0)
     {
-        $rgb = $this->getColourRGBFromID($colourID);
+        $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
 
         if (!$rgb) return null;
 

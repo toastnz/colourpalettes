@@ -133,3 +133,26 @@ Sometimes you just want to know if the colour is light or dark:
     <p>Primary colour is dark</p>
 <% end_if %>
 ```
+
+This module also provides a controller extension that adds helper methods to retrieve colours by name or ID, and adjust the brightness of colours.
+
+#### Return the first valid colour from a list of colours
+``` ss
+$FirstColour($Colour1, $Colour2, etc)
+```
+
+#### Access a colour by its given name in colours.yml config
+``` ss
+$ColourByName('primary')
+```
+
+#### Access a colour by ID (probably don't need this ever, but it's here)
+``` ss
+$ColourByID(1)
+```
+
+#### Change the colour’s brightness by percentage (returns hex code)
+``` ss
+$LightenColour('primary', 50)
+$DarkenColour('primary', 50)
+```
