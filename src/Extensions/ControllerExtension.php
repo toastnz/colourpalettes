@@ -7,7 +7,7 @@ use Toast\ColourPalettes\Models\Colour;
 
 class ControllerExtension extends Extension
 {
-    public function getFirstColour(...$colours)
+    public function getFirstColour(...$colours): ?Colour
     {
         foreach ($colours as $colour) {
             // If the $arg is not a Colour, skip it
@@ -20,7 +20,7 @@ class ControllerExtension extends Extension
         return null;
     }
 
-    public function isValidColour($colour)
+    public function isValidColour($colour): bool
     {
         // make sure the colour is a instance of Colour and exists
         if (!$colour) return false;
@@ -30,7 +30,8 @@ class ControllerExtension extends Extension
         return true;
     }
 
-    public function getColourByName($colourName) {
+    public function getColourByName($colourName): ?Colour
+    {
         // Get all the Colours
         $allColours = Colour::get();
 
@@ -41,7 +42,7 @@ class ControllerExtension extends Extension
         return $this->isValidColour($colour) ? $colour : null;
     }
 
-    public function getColourByID($colourID)
+    public function getColourByID($colourID): ?Colour
     {
         // Get all the Colours
         $allColours = Colour::get();
@@ -52,7 +53,7 @@ class ControllerExtension extends Extension
         return $this->isValidColour($colour) ? $colour : null;
     }
 
-    public function getColourRGBArrayFromNameOrID($colourNameOrID)
+    public function getColourRGBArrayFromNameOrID($colourNameOrID): ?array
     {
         $colour = is_numeric($colourNameOrID) ? $this->getColourByID($colourNameOrID) : $this->getColourByName($colourNameOrID);
 
@@ -61,7 +62,7 @@ class ControllerExtension extends Extension
         return sscanf($colour->Value, "#%02x%02x%02x");
     }
 
-    public function getLightenColour($colourNameOrID, $amount = 0)
+    public function getLightenColour($colourNameOrID, $amount = 0): ?string
     {
         $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
 
@@ -78,7 +79,7 @@ class ControllerExtension extends Extension
         return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
     }
 
-    public function getDarkenColour($colourNameOrID, $amount = 0)
+    public function getDarkenColour($colourNameOrID, $amount = 0): ?string
     {
         $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
 
