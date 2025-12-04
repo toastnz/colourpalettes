@@ -53,46 +53,21 @@ class ControllerExtension extends Extension
         return $this->isValidColour($colour) ? $colour : null;
     }
 
-    public function getColourRGBArrayFromNameOrID($colourNameOrID): ?array
+    public function getLightenColour($colourNameOrID, $amount = 0): ?string
     {
-        $colour = is_numeric($colourNameOrID) ? $this->getColourByID($colourNameOrID) : $this->getColourByName($colourNameOrID);
+        $colour = $this->getColourByID($colourNameOrID);
 
         if (!$colour) return null;
 
-        return sscanf($colour->Value, "#%02x%02x%02x");
-    }
-
-    public function getLightenColour($colourNameOrID, $amount = 0): ?string
-    {
-        $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
-
-        if (!$rgb) return null;
-
-        $amount = abs($amount);
-        $amount = min(100, $amount);
-        $percentage = (255 * $amount / 100);
-
-        $r = min(255, $rgb[0] + $percentage);
-        $g = min(255, $rgb[1] + $percentage);
-        $b = min(255, $rgb[2] + $percentage);
-
-        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
+        return $colour->getLightenedBy($amount);
     }
 
     public function getDarkenColour($colourNameOrID, $amount = 0): ?string
     {
-        $rgb = $this->getColourRGBArrayFromNameOrID($colourNameOrID);
+        $colour = $this->getColourByID($colourNameOrID);
 
-        if (!$rgb) return null;
+        if (!$colour) return null;
 
-        $amount = abs($amount);
-        $amount = min(100, $amount);
-        $percentage = (255 * $amount / 100);
-
-        $r = max(0, $rgb[0] - $percentage);
-        $g = max(0, $rgb[1] - $percentage);
-        $b = max(0, $rgb[2] - $percentage);
-
-        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
+        return $colour->getDarkenedBy($amount);
     }
 }

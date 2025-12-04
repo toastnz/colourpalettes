@@ -258,6 +258,46 @@ class Colour extends DataObject
         return ($yiq >= 130) ? 'light' : 'dark';
     }
 
+    public function getColourRGBArray(): ?array
+    {
+        $value = $this->getValue();
+        if (!$value) return null;
+        return sscanf($value, "#%02x%02x%02x");
+    }
+
+    public function getLightenedBy($amount = 0): ?string
+    {
+        $rgb = $this->getColourRGBArray();
+
+        if (!$rgb) return null;
+
+        $amount = abs($amount);
+        $amount = min(100, $amount);
+        $percentage = (255 * $amount / 100);
+
+        $r = min(255, $rgb[0] + $percentage);
+        $g = min(255, $rgb[1] + $percentage);
+        $b = min(255, $rgb[2] + $percentage);
+
+        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
+    }
+
+    public function getDarkenedBy($amount = 0): ?string
+    {
+        $rgb = $this->getColourRGBArray();
+
+        if (!$rgb) return null;
+
+        $amount = abs($amount);
+        $amount = min(100, $amount);
+        $percentage = (255 * $amount / 100);
+
+        $r = max(0, $rgb[0] - $percentage);
+        $g = max(0, $rgb[1] - $percentage);
+        $b = max(0, $rgb[2] - $percentage);
+
+        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
+    }
 
     /**
      * Returns a CSS variable name for a relation (e.g. 'PrimaryColourID' => 'primary-colour').
