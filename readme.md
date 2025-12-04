@@ -132,6 +132,14 @@ Sometimes you just want to know if the colour is light or dark:
 <% if $PrimaryColour.IsDark %>
     <p>Primary colour is dark</p>
 <% end_if %>
+
+<% if $PrimaryColour.Luminance <= 5 %>
+    <p>Primary colour is nearly black</p>
+<% end_if %>
+
+<% if $PrimaryColour.Luminance >= 95 %>
+    <p>Primary colour is nearly white</p>
+<% end_if %>
 ```
 
 Or you might want to adjust the brightness of a colour:
