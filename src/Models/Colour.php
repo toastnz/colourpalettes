@@ -258,6 +258,26 @@ class Colour extends DataObject
         return ($yiq >= 130) ? 'light' : 'dark';
     }
 
+    public function getLuminance()
+    {
+        $rgb = $this->getColourRGBArray();
+
+        if (!$rgb) return null;
+
+        // Convert RGB to linear values
+        $r = $rgb[0] / 255;
+        $g = $rgb[1] / 255;
+        $b = $rgb[2] / 255;
+
+        $r = ($r <= 0.03928) ? $r / 12.92 : pow((($r + 0.055) / 1.055), 2.4);
+        $g = ($g <= 0.03928) ? $g / 12.92 : pow((($g + 0.055) / 1.055), 2.4);
+        $b = ($b <= 0.03928) ? $b / 12.92 : pow((($b + 0.055) / 1.055), 2.4);
+
+        // Calculate luminance and scale to 0-100
+        $luminance = (0.2126 * $r) + (0.7152 * $g) + (0.0722 * $b);
+        return round($luminance * 100);
+    }
+
     public function getColourRGBArray(): ?array
     {
         $value = $this->getValue();
