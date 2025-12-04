@@ -5,6 +5,7 @@ namespace Toast\ColourPalettes\Models;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\TextField;
+use SilverStripe\Model\ArrayData;
 use TractorCow\Colorpicker\Color;
 use SilverStripe\Security\Security;
 use SilverStripe\View\Requirements;
@@ -14,7 +15,6 @@ use SilverStripe\Forms\OptionsetField;
 use SilverStripe\SiteConfig\SiteConfig;
 use Toast\ColourPalettes\Helpers\Helper;
 use TractorCow\Colorpicker\Forms\ColorField;
-use SilverStripe\Core\Validation\ValidationResult;
 
 class Colour extends DataObject
 {
@@ -256,6 +256,58 @@ class Colour extends DataObject
         $b = hexdec(substr($hex, 4, 2));
         $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
         return ($yiq >= 130) ? 'light' : 'dark';
+    }
+
+    /**
+     * Converts the colour's hex value to an HSL array: ['H' => ..., 'S' => ..., 'L' => ...]
+     * Optionally adjusts H, S, and L by the given amounts.
+     * Returns null if the hex value is invalid.
+     */
+    public function getHSL(int $hAdjust = 0, int $sAdjust = 0, int $lAdjust = 0): ?ArrayData
+    {
+        $hex = preg_replace('/[^a-fA-F0-9]/', '', (string)$this->HexValue);
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+
+        if (strlen($hex) !== 6) {
+            return null;
+        }
+
+        $r = hexdec(substr($hex, 0, 2)) / 255;
+        $g = hexdec(substr($hex, 2, 2)) / 255;
+        $b = hexdec(substr($hex, 4, 2)) / 255;
+
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+        $h = $s = $l = ($max + $min) / 2;
+
+        if ($max == $min) {
+            $h = $s = 0; // achromatic
+        } else {
+            $d = $max - $min;
+            $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+            switch ($max) {
+                case $r:
+                    $h = ($g - $b) / $d + ($g < $b ? 6 : 0);
+                    break;
+                case $g:
+                    $h = ($b - $r) / $d + 2;
+                    break;
+                case $b:
+                    $h = ($r - $g) / $d + 4;
+                    break;
+            }
+            $h /= 6;
+        }
+
+        // Convert to integer values and apply adjustments
+        return ArrayData::create([
+            'H' => max(0, min(360, round($h * 360) + $hAdjust)),
+            'S' => max(0, min(100, round($s * 100) + $sAdjust)),
+            'L' => max(0, min(100, round($l * 100) + $lAdjust))
+        ]);
     }
 
     public function getLuminance()
