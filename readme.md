@@ -134,6 +134,16 @@ Sometimes you just want to know if the colour is light or dark:
 <% end_if %>
 ```
 
+Or you might want to adjust the brightness of a colour:
+```css
+<style>
+    /* Lighten the colour by 50% */
+    color: {$PrimaryColour.LightenedBy(50)};
+     /* Darken the colour by 30% */
+    background-color: {$SecondaryColour.DarkenedBy(30)};
+</style>
+```
+
 This module also provides a controller extension that adds helper methods to retrieve colours by name or ID, and adjust the brightness of colours.
 
 #### Return the first valid colour from a list of colours
