@@ -162,8 +162,9 @@ class Colour extends DataObject
 
     public function isThemeColour()
     {
-        $restrictions = $this->getColourRestrictions();
-        return ($this->CSSName != null && $restrictions->canChange) ? true : false;
+        $themeColours = $this->getThemeColours();
+        if (count($themeColours) == 0) return false;
+        return in_array($this->CSSName, $themeColours);
     }
 
     public function requireDefaultRecords()
@@ -450,6 +451,12 @@ class Colour extends DataObject
     protected function getDefaultColours()
     {
         return $this->config()->get('default_colours') ?: [];
+    }
+
+    // Method to get all the theme colours from the yml config
+    protected function getThemeColours()
+    {
+        return $this->config()->get('theme_colours') ?: [];
     }
 
     public function getColourGroups()

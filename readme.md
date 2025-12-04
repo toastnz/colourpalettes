@@ -31,6 +31,9 @@ Toast\ColourPalettes\Models\Colour:
     - black: '000000'
     - off-white: null
     - off-black: null
+  theme_colours:
+    - primary
+    - secondary
   contrast_colours:
     - on-dark: '#ffffff'
     - on-light: '#000000'
@@ -40,6 +43,8 @@ Toast\ColourPalettes\Models\Colour:
 Adding colour groups will add a listbox to each colour added in the site config, allowing you to assign a colour to a single group or multiple groups.
 
 Colours with a value will be locked and cannot be deleted or edited in the CMS. Groups are optional, but can be used to separate colours into various colour palette fields.
+
+Theme colours are a list of default colours that can be separated from the rest of the colours. These colours will be shown at the top of the colour palette field when selecting a colour.
 
 Contrast colours are the colours used when generating the css variables, on-dark will be used if the colour is set to dark, and on-light will be used if the colour is set to light. Makes senses right?
 
