@@ -68,6 +68,7 @@ class Colour extends DataObject
             'SiteConfigs',
             'ContrastColour',
             'ReferenceColourID',
+            'IsThemeColour',
             'Colour', // Legacy field, to be removed in future
             'CustomColourID' // Legacy field, to be removed in future
         ]);
