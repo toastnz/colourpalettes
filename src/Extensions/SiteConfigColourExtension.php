@@ -111,23 +111,18 @@ class SiteConfigColourExtension extends Extension
     /**
      * Get the colours for the CMS, allowing extensions to modify the list.
      *
-     * @return ArrayList
+     * @return ManyManyList
      */
-    public function getColoursForCMS(): ArrayList
+    public function getColoursForCMS(): ManyManyList
     {
         // Get all the colours related to the SiteConfig
-        $colours = $this->owner->Colours();
-
-        // Remove the colours that are theme colours
-        $filteredColours = $colours->filterByCallback(function ($colour) {
-            return !$colour->isThemeColour();
-        });
+        $colours = $this->owner->Colours()->exclude('isThemeColour', 1)->sort('SortOrder');
 
         // Allow extensions to modify the colours list
-        $this->owner->extend('updateColoursForCMS', $filteredColours);
+        $this->owner->extend('updateColoursForCMS', $colours);
 
         // Return the list of colours
-        return $filteredColours;
+        return $colours;
     }
 
     /**
