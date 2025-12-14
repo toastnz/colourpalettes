@@ -174,11 +174,21 @@ class SiteConfigColourExtension extends Extension
         $colours = Colour::get();
 
         foreach ($colours as $colour) {
+            // Get the current value of IsThemeColour
+            $currentBool = $colour->IsThemeColour;
+
+            // Determine if this colour is a theme colour based on config
             if (in_array($colour->CSSName, $themeColoursConfig)) {
                 $colour->IsThemeColour = true;
             } else {
                 $colour->IsThemeColour = false;
             }
+
+            // Only write if the value has changed
+            if ($currentBool === $colour->IsThemeColour) continue;
+
+            // Save the change
+            $colour->write();
         }
     }
 
