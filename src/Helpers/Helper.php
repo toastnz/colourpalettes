@@ -150,4 +150,46 @@ class Helper
         }, array_keys($colours));
         return implode('', $styles);
     }
+
+    /**
+     * Get the theme colours from config.
+     * @return array<int, string>
+     */
+    public static function getThemeColoursFromConfig(): array
+    {
+        $colour = new Colour();
+        return $colour->config()->get('theme_colours') ?: [];
+    }
+
+    /**
+     * Set the IsThemeColour property for colours based on config.
+     *
+     * @return void
+     */
+    public static function setThemeColours(): void
+    {
+        // Get the theme colours
+        $themeColoursConfig = self::getThemeColoursFromConfig();
+
+        // all colours
+        $colours = Colour::get();
+
+        foreach ($colours as $colour) {
+            // Get the current value of IsThemeColour
+            $currentBool = $colour->IsThemeColour;
+
+            // Determine if this colour is a theme colour based on config
+            if (in_array($colour->CSSName, $themeColoursConfig)) {
+                $colour->IsThemeColour = true;
+            } else {
+                $colour->IsThemeColour = false;
+            }
+
+            // Only write if the value has changed
+            if ($currentBool === $colour->IsThemeColour) continue;
+
+            // Save the change
+            $colour->write();
+        }
+    }
 }

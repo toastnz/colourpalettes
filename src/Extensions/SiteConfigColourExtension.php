@@ -151,55 +151,13 @@ class SiteConfigColourExtension extends Extension
     }
 
     /**
-     * Get the theme colours from config.
-     * @return array<int, string>
-     */
-    protected function getThemeColoursFromConfig(): array
-    {
-        $colour = new Colour();
-        return $colour->config()->get('theme_colours') ?: [];
-    }
-
-    /**
-     * Set the IsThemeColour property for colours based on config.
-     *
-     * @return void
-     */
-    protected function setThemeColours(): void
-    {
-        // Get the theme colours
-        $themeColoursConfig = $this->getThemeColoursFromConfig();
-
-        // all colours
-        $colours = Colour::get();
-
-        foreach ($colours as $colour) {
-            // Get the current value of IsThemeColour
-            $currentBool = $colour->IsThemeColour;
-
-            // Determine if this colour is a theme colour based on config
-            if (in_array($colour->CSSName, $themeColoursConfig)) {
-                $colour->IsThemeColour = true;
-            } else {
-                $colour->IsThemeColour = false;
-            }
-
-            // Only write if the value has changed
-            if ($currentBool === $colour->IsThemeColour) continue;
-
-            // Save the change
-            $colour->write();
-        }
-    }
-
-    /**
      * After write, ensure default colours exist and regenerate CSS files.
      *
      * @return void
      */
     public function onAfterWrite(): void
     {
-        $this->setThemeColours();
+        Helper::setThemeColours();
 
         if ($this->owner->ID && !$this->owner->Colours()->count()) {
             $colour = new Colour();
@@ -216,7 +174,7 @@ class SiteConfigColourExtension extends Extension
      */
     public function onAfterSkippedWrite(): void
     {
-        $this->setThemeColours();
+        Helper::setThemeColours();
         Helper::generateCSSFiles();
     }
 }

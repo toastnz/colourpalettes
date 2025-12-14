@@ -10,10 +10,12 @@ class DatabaseAdminExtension extends Extension
 {
     public function onAfterBuild()
     {
-         //generate all the required css files by theme colours
-         if (Security::database_is_ready()) {
-            // theme colours
-            if (Helper::getCurrentSiteConfig()) Helper::generateCSSFiles();
+        //generate all the required css files by theme colours
+        if (Security::database_is_ready()) {
+            if (Helper::getCurrentSiteConfig()) {
+                Helper::generateCSSFiles();
+                Helper::setThemeColours();
+            };
         }
     }
 }
