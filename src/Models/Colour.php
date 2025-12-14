@@ -541,6 +541,11 @@ class Colour extends DataObject
 
         // Use the CSSName if it exists, otherwise fallback to the ID
         $cssName = $this->getCSSReference();
+        // Get all the theme colours from the config
+        $themeColours = Helper::getThemeColoursFromConfig();
+
+        // Set IsThemeColour based on whether the CSSName is in the theme colours list
+        $this->IsThemeColour = in_array($cssName, $themeColours);
 
         // If the title is empty, set it to the CSSReference
         if (!$this->Title) return $this->Title = $cssName;

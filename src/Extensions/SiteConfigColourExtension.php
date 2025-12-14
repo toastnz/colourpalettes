@@ -157,8 +157,6 @@ class SiteConfigColourExtension extends Extension
      */
     public function onAfterWrite(): void
     {
-        Helper::setThemeColours();
-
         if ($this->owner->ID && !$this->owner->Colours()->count()) {
             $colour = new Colour();
             $colour->requireDefaultRecords();
@@ -174,7 +172,6 @@ class SiteConfigColourExtension extends Extension
      */
     public function onAfterSkippedWrite(): void
     {
-        Helper::setThemeColours();
         Helper::generateCSSFiles();
     }
 }
