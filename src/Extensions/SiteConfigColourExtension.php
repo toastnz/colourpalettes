@@ -77,7 +77,7 @@ class SiteConfigColourExtension extends Extension
             ],
             'ReferenceColourID' => [
                 'title' => 'Select Colour',
-                'callback' => fn($record, $column, $grid) => ColourPaletteField::create($column, $column, ['Global'], fn($item) => !$item->isThemeColour()),
+                'callback' => fn($record, $column, $grid) => ColourPaletteField::create($column, $column, ['Global'], fn($item) => !$item->IsThemeColour),
             ],
         ]);
 
@@ -97,7 +97,7 @@ class SiteConfigColourExtension extends Extension
     {
         if ($this->owner->isInDB()) {
             $themeColours = $this->owner->Colours()->filterByCallback(function ($colour) {
-                return $colour->isThemeColour();
+                return $colour->IsThemeColour;
             });
 
             return $themeColours;
@@ -151,16 +151,51 @@ class SiteConfigColourExtension extends Extension
     }
 
     /**
+     * Get the theme colours from config.
+     * @return array<int, string>
+     */
+    protected function getThemeColoursFromConfig(): array
+    {
+        $colour = new Colour();
+        return $colour->config()->get('theme_colours') ?: [];
+    }
+
+    /**
+     * Set the IsThemeColour property for colours based on config.
+     *
+     * @return void
+     */
+    protected function setThemeColours(): void
+    {
+        // Get the theme colours
+        $themeColoursConfig = $this->getThemeColoursFromConfig();
+
+        // all colours
+        $colours = Colour::get();
+
+        foreach ($colours as $colour) {
+            if (in_array($colour->CSSName, $themeColoursConfig)) {
+                $colour->IsThemeColour = true;
+            } else {
+                $colour->IsThemeColour = false;
+            }
+        }
+    }
+
+    /**
      * After write, ensure default colours exist and regenerate CSS files.
      *
      * @return void
      */
     public function onAfterWrite(): void
     {
+        $this->setThemeColours();
+
         if ($this->owner->ID && !$this->owner->Colours()->count()) {
             $colour = new Colour();
             $colour->requireDefaultRecords();
         }
+
         Helper::generateCSSFiles();
     }
 
@@ -171,6 +206,7 @@ class SiteConfigColourExtension extends Extension
      */
     public function onAfterSkippedWrite(): void
     {
+        $this->setThemeColours();
         Helper::generateCSSFiles();
     }
 }

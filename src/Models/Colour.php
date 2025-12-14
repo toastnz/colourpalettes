@@ -28,6 +28,7 @@ class Colour extends DataObject
         'CustomColourID' => 'Varchar(255)', // Legacy field, to be removed in future
         'Groups'         => 'Text',
         'ContrastColour' => 'Varchar(8)',
+        'IsThemeColour' => 'Boolean(0)',
         'SortOrder'      => 'Int',
     ];
 
@@ -160,12 +161,6 @@ class Colour extends DataObject
         ];
     }
 
-    public function isThemeColour()
-    {
-        $themeColours = $this->getThemeColours();
-        if (count($themeColours) == 0) return false;
-        return in_array($this->CSSName, $themeColours);
-    }
 
     public function requireDefaultRecords()
     {
@@ -511,7 +506,7 @@ class Colour extends DataObject
     public function inheritColourFromReference($write = false)
     {
         // Make sure this colour is a theme colour
-        if (!$this->isThemeColour()) return;
+        if (!$this->IsThemeColour) return;
         // Check if there is a reference colour set
         if (!$this->ReferenceColourID) return;
         // Prevent self-referencing

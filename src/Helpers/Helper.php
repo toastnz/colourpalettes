@@ -47,8 +47,8 @@ class Helper
         if ($filterFunction && is_callable($filterFunction)) {
             $colours = $colours->filterByCallback($filterFunction);
         }
-        $normalColours = $colours->filterByCallback(fn($c) => !$c->isThemeColour())->sort('SortOrder');
-        $themeColours = $colours->filterByCallback(fn($c) => $c->isThemeColour())->sort('SortOrder');
+        $normalColours = $colours->filterByCallback(fn($c) => !$c->IsThemeColour)->sort('SortOrder');
+        $themeColours = $colours->filterByCallback(fn($c) => $c->IsThemeColour)->sort('SortOrder');
         $allColours = array_merge($themeColours->toArray(), $normalColours->toArray());
         $palette = [];
         foreach ($allColours as $colour) {
