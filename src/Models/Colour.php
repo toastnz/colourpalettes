@@ -169,6 +169,7 @@ class Colour extends DataObject
         $siteConfig = Helper::getCurrentSiteConfig();
         if (!$siteConfig) return;
         $defaultColours = $this->getDefaultColours();
+        $themeColours = $this->getThemeColours();
         if (count($defaultColours) == 0) return;
 
         // 1. Migrate CustomColourID to CSSName if needed
@@ -204,6 +205,12 @@ class Colour extends DataObject
             $colourObj = new self();
             $colourObj->CSSName = $colourKey;
             if ($colourValue) $colourObj->HexValue = $colourValue;
+
+            // If this is a theme colour, set the flag
+            if (in_array($colourKey, $themeColours)) {
+                $colourObj->IsThemeColour = true;
+            }
+
             $colourObj->write();
             $siteConfig->Colours()->add($colourObj->ID);
             DB::alteration_message("Colour '$colourKey' created", 'created');
