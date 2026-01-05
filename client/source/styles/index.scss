@@ -138,6 +138,10 @@ $checked-text-shadow-color: #fff;
           top .2s ease 0s,
           transform .2s ease 0s;
       }
+
+      small {
+        font-weight: 400;
+      }
     }
 
     input:checked + label {

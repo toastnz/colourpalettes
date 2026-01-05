@@ -7,7 +7,7 @@
                 <% if $Value != 0 && $Top.getColour($Value).Title %>
                     <div></div>
                     <div></div>
-                    <span>{$Top.getColour($Value).Title}</span>
+                    <span>{$Top.getColour($Value).Title}<br><small>#{$Title}</small></span>
                 <% end_if %>
             </label>
         </li>
