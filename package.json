@@ -39,6 +39,7 @@
         "webpack-merge": "^6.0.1"
     },
     "dependencies": {
+        "color-namer": "^1.4.0",
         "domobserverjs": "^0.0.6"
     }
 }

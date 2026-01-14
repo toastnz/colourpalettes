@@ -51,8 +51,9 @@ class Colour extends DataObject
 
     public function getCMSFields()
     {
-        Requirements::css('toastnz/colourpalettes: client/dist/styles/colour-palette-field.css');
+        Requirements::css('toastnz/colourpalettes: client/dist/styles/main.css');
         Requirements::javascript('toastnz/colourpalettes: client/dist/scripts/accessibility.js');
+        Requirements::javascript('toastnz/colourpalettes: client/dist/scripts/colour-names.js');
 
         $fields = parent::getCMSFields();
         $restrictions = $this->getColourRestrictions();

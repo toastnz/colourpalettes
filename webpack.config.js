@@ -32,7 +32,7 @@ const aliases = {
 // Our marmalade config (imports the cms theme, dev theme and blocks to the frontend)
 const app = {
   dir,
-  files: ['colour-palette-field', 'accessibility'],
+  files: ['main', 'colour-palette-field', 'accessibility', 'colour-names'],
   entries: {},
   output: {
     publicPath: '/client/dist/scripts/',

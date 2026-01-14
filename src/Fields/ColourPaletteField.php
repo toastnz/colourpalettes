@@ -42,7 +42,7 @@ class ColourPaletteField extends OptionsetField
 
     public function Field($properties = [])
     {
-        Requirements::css('toastnz/colourpalettes: client/dist/styles/colour-palette-field.css');
+        Requirements::css('toastnz/colourpalettes: client/dist/styles/main.css');
         Requirements::javascript('toastnz/colourpalettes: client/dist/scripts/colour-palette-field.js');
 
         return parent::Field($properties);
