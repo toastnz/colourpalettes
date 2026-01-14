@@ -69,6 +69,10 @@ Document setup
 CMSObserver.observe('#Form_ItemEditForm_HexValue', (inputs) => {
   inputs.forEach((hexInput) => {
     const nameInput = document.getElementById('Form_ItemEditForm_Title');
+
+    if (nameInput.readOnly || nameInput.disabled) return;
+    if (hexInput.readOnly || hexInput.disabled) return;
+
     const suggestions = createSuggestionsForInput(nameInput);
 
     let timeout = null;
