@@ -404,7 +404,7 @@ class Colour extends DataObject
     /**
      * Returns the CSS variable definitions as a string for this colour.
      */
-    public function getCSSVars(string $relation): string
+    public function getCSSVars(string $relation = ''): string
     {
         return implode('', $this->getCSSVarsArray($relation));
     }
@@ -412,7 +412,7 @@ class Colour extends DataObject
     /**
      * Returns the root CSS variable definitions as a string for this colour.
      */
-    public function getRootVars(string $relation): string
+    public function getRootVars(string $relation = ''): string
     {
         return str_replace('--_', '--', $this->getCSSVars($relation));
     }
