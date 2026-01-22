@@ -7,7 +7,17 @@
                 <% if $Value != 0 && $Top.getColour($Value).Title %>
                     <div></div>
                     <div></div>
-                    <span>{$Top.getColour($Value).Title}<br><small>#{$Title}</small></span>
+                    <span>
+                        <% with $Top.getColour($Value) %>
+                            <% if $IsThemeColour %>
+                                {$CSSName}
+                            <% else %>
+                                {$Title}
+                            <% end_if %>
+                        <% end_with %>
+                        <br>
+                        <small>#{$Title}</small>
+                    </span>
                 <% end_if %>
             </label>
         </li>
