@@ -73,7 +73,7 @@ class SiteConfigColourExtension extends Extension
         $themeColoursField->getConfig()->getComponentByType(GridFieldEditableColumns::class)->setDisplayFields([
             'CSSName' => [
                 'title' => 'Title',
-                'callback' => fn($record, $column, $grid) => ReadonlyField::create($column, $column, $record->CSSName),
+                'field' => ReadonlyField::create('CSSName', 'CSS Name'),
             ],
             'ReferenceColourID' => [
                 'title' => 'Select Colour',
