@@ -30,10 +30,17 @@ class ControllerExtension extends Extension
         return true;
     }
 
-    public function getColourByName($colourName): ?Colour
+    public function getColourByName($colourName, $siteConfigID = null): ?Colour
     {
         // Get all the Colours
         $allColours = Colour::get();
+
+        // Each colour belongs to many SiteConfigs
+        if ($siteConfigID) {
+            $allColours = $allColours->filterByCallback(function ($colour) use ($siteConfigID) {
+                return $colour->SiteConfigs()->byID($siteConfigID) !== null;
+            });
+        }
 
         $colour = $allColours->filterAny([
             'CSSName' => $colourName,

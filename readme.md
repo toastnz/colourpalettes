@@ -169,6 +169,11 @@ $FirstColour($Colour1, $Colour2, etc)
 $ColourByName('primary')
 ```
 
+#### Access a colour by its given name in colours.yml config while using subsites
+``` ss
+$ColourByName('primary', $SubsiteID)
+```
+
 #### Access a colour by ID (probably don't need this ever, but it's here)
 ``` ss
 $ColourByID(1)
