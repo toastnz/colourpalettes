@@ -20,28 +20,28 @@ import { getBrightess } from 'scripts/components/functions';
 Document setup
 ------------------------------------------------------------------*/
 
-function getSessionValue(input) {
-  const name = input.name;
-  const namedURL = name + 'URL';
-  const url = window.location.href;
-  const sessionValue = window.sessionStorage.getItem(name);
-  const sessionURL = window.sessionStorage.getItem(namedURL);
+// function getSessionValue(input) {
+//   const name = input.name;
+//   const namedURL = name + 'URL';
+//   const url = window.location.href;
+//   const sessionValue = window.sessionStorage.getItem(name);
+//   const sessionURL = window.sessionStorage.getItem(namedURL);
 
-  if (sessionURL === url) {
-    return sessionValue;
-  }
+//   if (sessionURL === url) {
+//     return sessionValue;
+//   }
 
-  return null;
-}
+//   return null;
+// }
 
-function updateSessionValue(input) {
-  const name = input.name;
-  const value = input.value;
-  const namedURL = name + 'URL';
+// function updateSessionValue(input) {
+//   const name = input.name;
+//   const value = input.value;
+//   const namedURL = name + 'URL';
 
-  window.sessionStorage.setItem(namedURL, window.location.href);
-  window.sessionStorage.setItem(name, value);
-}
+//   window.sessionStorage.setItem(namedURL, window.location.href);
+//   window.sessionStorage.setItem(name, value);
+// }
 
 function loopInputs(fieldsets = [], func) {
   if (!fieldsets || !fieldsets.length) return;
@@ -69,17 +69,17 @@ CMSObserver.observe('ul.colourpalette', (fieldsets) => {
   // If the main element doesn't exist, return
   if (!main) return;
 
-  const actionButtons = [...document.querySelectorAll('.cms-content-actions [type="submit"]')];
+  // const actionButtons = [...document.querySelectorAll('.cms-content-actions [type="submit"]')];
 
   // If the user saves, update the session value
-  actionButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      loopInputs(fieldsets, (input) => {
-        if (!input.checked) return;
-        updateSessionValue(input);
-      });
-    });
-  });
+  // actionButtons.forEach((button) => {
+  //   button.addEventListener('click', () => {
+  //     loopInputs(fieldsets, (input) => {
+  //       if (!input.checked) return;
+  //       updateSessionValue(input);
+  //     });
+  //   });
+  // });
 
   // Loop through the fieldsets
   (async () => {
@@ -100,13 +100,13 @@ CMSObserver.observe('ul.colourpalette', (fieldsets) => {
       const brightness = (brightnessAttribute) ? brightnessAttribute : getBrightess(value) > 130 ? 'light' : 'dark';
 
       // Get the session value
-      const sessionValue = getSessionValue(input);
+      // const sessionValue = getSessionValue(input);
 
       // Check if the session value exists
-      if (sessionValue) {
-        // If the session value is the same as the input value, check the input
-        input.checked = (input.value === sessionValue);
-      };
+      // if (sessionValue) {
+      //   // If the session value is the same as the input value, check the input
+      //   input.checked = (input.value === sessionValue);
+      // };
 
       const onChange = () => {
         // If the input is not checked, return
