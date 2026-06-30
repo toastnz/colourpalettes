@@ -28,11 +28,6 @@ class UpdateColoursTask extends BuildTask
 
     protected function execute(InputInterface $input, PolyOutput $output): int
     {
-        $request = Injector::inst()->get(HTTPRequest::class);
-        if (!$request->getVar('confirm')) {
-            echo 'Please add ?confirm=1 to the URL to proceed.' . PHP_EOL;
-            return Command::FAILURE;
-        }
 
         $colours = DB::query('SELECT * FROM "Colour"');
         foreach ($colours as $colour) {
