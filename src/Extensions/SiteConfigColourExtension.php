@@ -6,7 +6,7 @@ use Dom\Text;
 use SilverStripe\Forms\TabSet;
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\ORM\ManyManyList;
+use SilverStripe\ORM\Relation;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Security\Security;
 use SilverStripe\Forms\LiteralField;
@@ -111,9 +111,9 @@ class SiteConfigColourExtension extends Extension
     /**
      * Get the colours for the CMS, allowing extensions to modify the list.
      *
-     * @return ManyManyList
+     * @return Relation
      */
-    public function getColoursForCMS(): ManyManyList
+    public function getColoursForCMS(): Relation
     {
         // Get all the colours related to the SiteConfig
         $colours = $this->owner->Colours()->exclude('isThemeColour', 1)->sort('SortOrder');
