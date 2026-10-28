@@ -2,176 +2,154 @@
 
 namespace Toast\ColourPalettes\Extensions;
 
-use Dom\Text;
-use SilverStripe\Forms\TabSet;
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\ORM\Relation;
-use SilverStripe\Forms\HeaderField;
-use SilverStripe\Security\Security;
-use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\ReadonlyField;
-use SilverStripe\Model\List\ArrayList;
-use SilverStripe\ORM\FieldType\DBField;
-use Toast\ColourPalettes\Models\Colour;
-use Toast\ColourPalettes\Helpers\Helper;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
-use Toast\ColourPalettes\Fields\ColourPaletteField;
-use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
-use Symbiote\GridFieldExtensions\GridFieldEditableColumns;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
-use Toast\ColourPalettes\Helpers\Helper as ColourPalettesHelper;
+use SilverStripe\Forms\GridField\GridFieldEditButton;
+use SilverStripe\Forms\HeaderField;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\TabSet;
+use SilverStripe\Model\List\SS_List;
+use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\ORM\FieldType\DBHTMLText;
+use SilverStripe\Security\Security;
+use SilverStripe\SiteConfig\SiteConfig;
+use Symbiote\GridFieldExtensions\GridFieldEditableColumns;
+use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
+use Toast\ColourPalettes\Fields\ColourPaletteField;
+use Toast\ColourPalettes\Helpers\Helper;
+use Toast\ColourPalettes\Models\Colour;
 
-
+/**
+ * Adds the colour palette to the SiteConfig.
+ *
+ * @extends Extension<SiteConfig>
+ * @method \SilverStripe\ORM\ManyManyList<Colour> Colours()
+ */
 class SiteConfigColourExtension extends Extension
 {
     /**
      * @var array<string, class-string>
      */
-    private static $many_many = [
+    private static array $many_many = [
         'Colours' => Colour::class,
     ];
 
     /**
-     * Update the CMS fields to include the Colours grid field.
-     *
-     * @param FieldList $fields
-     * @return void
+     * Update the CMS fields to include the Colours and Theme Colours grid fields.
      */
-    public function updateCMSFields(FieldList $fields): void
+    protected function updateCMSFields(FieldList $fields): void
     {
         $fields->removeByName(['Colours']);
 
-        $isSuperAdmin = Helper::isSuperAdmin();
-        $databaseReady = Security::database_is_ready();
-
-        if (!$isSuperAdmin || !$databaseReady) return;
-
-        $colours = $this->getColoursForCMS();
+        if (!Helper::isSuperAdmin() || !Security::database_is_ready()) {
+            return;
+        }
 
         $this->addCustomisationTab($fields);
 
         $coloursConfig = GridFieldConfig_RecordEditor::create(50);
-        $coloursConfig->addComponent(new GridFieldOrderableRows('SortOrder'));
-        $coloursConfig->removeComponentsByType('GridFieldEditButton');
-        $coloursField = GridField::create('Colours', 'Colours', $colours, $coloursConfig);
+        $coloursConfig->addComponent(GridFieldOrderableRows::create('SortOrder'));
+        $coloursConfig->removeComponentsByType(GridFieldEditButton::class);
+        $coloursField = GridField::create('Colours', 'Colours', $this->getColoursForCMS(), $coloursConfig);
         $fields->addFieldToTab('Root.Customization.ColourPalette', $coloursField);
 
-
-        // Get the theme colours
+        // Exit here if we have no theme colours
         $themeColours = $this->getThemeColoursForCMS();
 
-        // Exit here if we have no theme colours
-        if (!$themeColours || !$themeColours->count()) return;
+        if (!$themeColours || !$themeColours->count()) {
+            return;
+        }
 
-        // Set up the colours grid field config
-        $themeColoursConfig = GridFieldConfig::create()->addComponent(new GridFieldEditableColumns());
-        $themeColoursField = GridField::create('ThemeColours', 'Theme Colours', $themeColours, $themeColoursConfig);
-
-        // Configure display fields for theme colours grid
-        $themeColoursField->getConfig()->getComponentByType(GridFieldEditableColumns::class)->setDisplayFields([
+        // Set up the theme colours grid field
+        $themeColoursConfig = GridFieldConfig::create()->addComponent($editableColumns = GridFieldEditableColumns::create());
+        $editableColumns->setDisplayFields([
             'CSSName' => [
                 'title' => 'Title',
                 'field' => ReadonlyField::create('CSSName', 'CSS Name'),
             ],
             'ReferenceColourID' => [
-                'title' => 'Select Colour',
-                'callback' => fn($record, $column, $grid) => ColourPaletteField::create($column, $column, ['Global'], fn($item) => !$item->IsThemeColour),
+                'title'    => 'Select Colour',
+                'callback' => fn($record, $column, $grid) => ColourPaletteField::create($column, $column, ['Global'], fn(Colour $item) => !$item->IsThemeColour),
             ],
         ]);
 
         $fields->addFieldsToTab('Root.Customization.ColourPalette', [
             HeaderField::create('ThemeColoursHeader', 'Theme Colours')->setHeadingLevel(2),
-            $themeColoursField,
+            GridField::create('ThemeColours', 'Theme Colours', $themeColours, $themeColoursConfig),
             LiteralField::create('ThemeColoursSpace', '<br><br><br>'),
         ], 'Colours');
     }
 
     /**
-     * Get the theme colours for the CMS.
-     *
-     * @return ArrayList|null
+     * Get the theme colours for the CMS, allowing extensions to modify the list.
      */
-    private function getThemeColoursForCMS(): ?ArrayList
+    public function getThemeColoursForCMS(): ?SS_List
     {
-        if ($this->owner->isInDB()) {
-            $themeColours = $this->owner->Colours()->filterByCallback(function ($colour) {
-                return $colour->IsThemeColour;
-            });
+        $themeColours = null;
 
-            return $themeColours;
+        if ($this->getOwner()->isInDB()) {
+            $themeColours = $this->getOwner()->Colours()->filter('IsThemeColour', 1);
         }
 
-        return null;
+        $this->getOwner()->extend('updateThemeColoursForCMS', $themeColours);
+
+        return $themeColours;
     }
 
-
-
     /**
-     * Get the colours for the CMS, allowing extensions to modify the list.
-     *
-     * @return Relation
+     * Get the (non-theme) colours for the CMS, allowing extensions to modify the list.
      */
-    public function getColoursForCMS(): Relation
+    public function getColoursForCMS(): SS_List
     {
-        // Get all the colours related to the SiteConfig
-        $colours = $this->owner->Colours()->exclude('isThemeColour', 1)->sort('SortOrder');
+        $colours = $this->getOwner()->Colours()->exclude('IsThemeColour', 1)->sort('SortOrder');
 
-        // Allow extensions to modify the colours list
-        $this->owner->extend('updateColoursForCMS', $colours);
+        $this->getOwner()->extend('updateColoursForCMS', $colours);
 
-        // Return the list of colours
         return $colours;
     }
 
     /**
      * Add the Customization tab to the CMS if it doesn't exist.
-     *
-     * @param FieldList $fields
-     * @return void
      */
     public function addCustomisationTab(FieldList $fields): void
     {
-        if ($fields->fieldByName('Root.Customization')) {
-            return;
+        if (!$fields->fieldByName('Root.Customization')) {
+            $fields->addFieldToTab('Root', TabSet::create('Customization'));
         }
-        $fields->addFieldToTab('Root', TabSet::create('Customization'));
+
+        $this->getOwner()->extend('updateCustomisationTab', $fields);
     }
 
     /**
      * Get the site's colour CSS variables as HTMLText.
-     *
-     * @return DBField
      */
-    public function getSiteColourCSSVars(): DBField
+    public function getSiteColourCSSVars(): DBHTMLText
     {
-        $styles = ColourPalettesHelper::getRelatedColourStyles($this->owner);
-        return DBField::create_field('HTMLText', $styles);
+        $styles = Helper::getRelatedColourStyles($this->getOwner());
+
+        $this->getOwner()->extend('updateSiteColourCSSVars', $styles);
+
+        /** @var DBHTMLText $field */
+        $field = DBField::create_field(DBHTMLText::class, $styles);
+
+        return $field;
     }
 
     /**
-     * After write, ensure default colours exist and regenerate CSS files.
-     *
-     * @return void
+     * After write, ensure default colours exist and regenerate the CSS files.
      */
-    public function onAfterWrite(): void
+    protected function onAfterWrite(): void
     {
-        if ($this->owner->ID && !$this->owner->Colours()->count()) {
-            $colour = new Colour();
-            $colour->requireDefaultRecords();
+        $owner = $this->getOwner();
+
+        if ($owner->ID && !$owner->Colours()->exists()) {
+            Colour::singleton()->createDefaultColours($owner);
         }
 
-        Helper::generateCSSFiles();
-    }
-
-    /**
-     * After skipped write, regenerate CSS files.
-     *
-     * @return void
-     */
-    public function onAfterSkippedWrite(): void
-    {
-        Helper::generateCSSFiles();
+        Helper::generateCSSFiles($owner);
     }
 }

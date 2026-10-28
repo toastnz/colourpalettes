@@ -22,9 +22,16 @@
     ],
     "require": {
         "php": ">=8.3",
-        "silverstripe/cms": "^5 || ^6",
+        "silverstripe/cms": "^6",
+        "silverstripe/siteconfig": "^6",
+        "symbiote/silverstripe-gridfieldextensions": "^5",
         "composer/installers": "*",
         "tractorcow/silverstripe-colorpicker": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Toast\\ColourPalettes\\": "src/"
+        }
     },
     "extra": {
         "expose": [

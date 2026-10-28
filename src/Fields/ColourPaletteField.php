@@ -2,45 +2,53 @@
 
 namespace Toast\ColourPalettes\Fields;
 
-use SilverStripe\View\Requirements;
 use SilverStripe\Forms\OptionsetField;
-use Toast\ColourPalettes\Helpers\Helper;
 use SilverStripe\ORM\DataObjectInterface;
+use SilverStripe\ORM\FieldType\DBHTMLText;
+use SilverStripe\View\Requirements;
+use Toast\ColourPalettes\Helpers\Helper;
 use Toast\ColourPalettes\Models\Colour;
 
+/**
+ * An optionset of the current site's colours, rendered as swatches.
+ *
+ * Extensions can use `updateColourPaletteSource` to change the options, and `onBeforeSaveInto` / `onAfterSaveInto`
+ * to react to the value being saved.
+ */
 class ColourPaletteField extends OptionsetField
 {
-    // $source is an array of groups to get the colours from
-    public function __construct($name, $title = null, $source = [], $filter = null)
+    /**
+     * The site's colours keyed by ID, loaded on first use so the template can look colours up cheaply.
+     *
+     * @var array<int, Colour>|null
+     */
+    protected ?array $colours = null;
+
+    /**
+     * @param string[] $source Names of the colour groups to get the colours from (empty = all colours)
+     * @param callable|null $filter Receives a Colour and returns true to include it
+     */
+    public function __construct(string $name, ?string $title = null, array $source = [], ?callable $filter = null, mixed $value = null)
     {
-        // Add a 'None' option to the first position
-        $options = ['0' => 'None'];
+        // Add a 'None' option to the first position, followed by the colour palette
+        $options = ['0' => 'None'] + Helper::getColourPaletteArray($source, $filter);
 
-        // Set the source to the colour palette array
-        $palette = Helper::getColourPaletteArray($source, $filter);
+        parent::__construct($name, $title ?? $name, $options, $value);
 
-        // Set the source to the palette array
-        $source = $options + $palette;
-
-        // Set the source for use in the field
-        $this->setSource($source);
-
-        // If no title is provided, use the name
-        if (!isset($title)) $title = $name;
-
-        // Call the parent constructor
-        parent::__construct($name, $title, $source, $filter);
+        $this->extend('updateColourPaletteSource', $options);
+        $this->setSource($options);
     }
 
-    public function setValue($value, $data = null)
+    public function setValue($value, $data = null): static
     {
         if (is_object($value) && isset($value->ID)) {
             $value = $value->ID;
         }
+
         return parent::setValue($value, $data);
     }
 
-    public function Field($properties = [])
+    public function Field($properties = []): DBHTMLText
     {
         Requirements::css('toastnz/colourpalettes: client/dist/styles/main.css');
         Requirements::javascript('toastnz/colourpalettes: client/dist/scripts/colour-palette-field.js');
@@ -48,39 +56,42 @@ class ColourPaletteField extends OptionsetField
         return parent::Field($properties);
     }
 
-    // A function to return the whole Colour object for use in templates if needed
-    public function getColour($value = null)
+    /**
+     * Get the whole Colour object for a value (defaults to the field's value). Used by the template.
+     */
+    public function getColour(int|string|null $value = null): ?Colour
     {
-        if (!$value) $value = $this->value;
+        // Only fall back to the field's value when no value is passed, so the 'None' option ('0') stays empty
+        $value = (int) ($value ?? $this->value);
 
-        $value = (int)$value;
+        if (!$value) {
+            return null;
+        }
 
-        // Get the current site config
-        $siteConfig = Helper::getCurrentSiteConfig();
-        if (!$siteConfig) return null;
+        if ($this->colours === null) {
+            $this->colours = [];
 
-        // Get the colours related to this site config
-        $colours = $siteConfig->Colours();
-        if (!$colours) return null;
+            if ($siteConfig = Helper::getCurrentSiteConfig()) {
+                foreach ($siteConfig->Colours() as $colour) {
+                    $this->colours[(int) $colour->ID] = $colour;
+                }
+            }
+        }
 
-        // Find the colour with the matching ID
-        $colour = $colours->find('ID', $value);
-        if (!$colour) return null;
+        $colour = $this->colours[$value] ?? null;
+
+        $this->extend('updateColour', $colour, $value);
 
         return $colour;
     }
 
-    public function saveInto(DataObjectInterface $record)
+    public function saveInto(DataObjectInterface $record): void
     {
-        // Find the relation based on the field name
-        $relation = $this->name;
+        $this->extend('onBeforeSaveInto', $record);
 
-        // Set the relation on the record to the selected value
-        $record->$relation = $this->value;
-
-        // Write the record
-        $record->write();
-
+        // The record is written by whatever is saving the form (CMS action, GridFieldEditableColumns, etc.)
         parent::saveInto($record);
+
+        $this->extend('onAfterSaveInto', $record);
     }
 }

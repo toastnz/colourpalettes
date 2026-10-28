@@ -12,22 +12,25 @@ Toast\ColourPalettes\Models\Colour:
     # - black: '000000'
     # - off-white: null
     # - off-black: null
+  theme_colours:
+    # - primary
+    # - secondary
   contrast_colours:
     - on-dark: '#ffffff'
     - on-light: '#000000'
 
 SilverStripe\SiteConfig\SiteConfig:
-  css_folder_path: '/public/assets/styles/'
+  # Folder inside the public folder the generated CSS is written to.
+  # Set css_folder_path (relative to the base folder) instead to write it elsewhere.
+  css_folder: 'assets/styles'
+  # Inline the theme CSS on every page, set to false to link the file instead
+  inline_theme_css: true
   extensions:
     - Toast\ColourPalettes\Extensions\SiteConfigColourExtension
 
 PageController:
   extensions:
     - Toast\ColourPalettes\Extensions\PageControllerExtension
-
-SilverStripe\ORM\DatabaseAdmin:
-  extensions:
-    - Toast\ColourPalettes\Extensions\DatabaseAdminExtension
 
 SilverStripe\Control\Controller:
   extensions:

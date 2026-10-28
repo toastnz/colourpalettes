@@ -1,23 +1,28 @@
 <?php
 
-namespace Toast\Tasks;
+namespace Toast\ColourPalettes\Tasks;
 
-use Toast\Blocks\Block;
-use SilverStripe\ORM\DB;
-use SilverStripe\Assets\File;
-use SilverStripe\Assets\Image;
 use SilverStripe\Dev\BuildTask;
-use Toast\Blocks\MediaTextBlock;
-use SilverStripe\CMS\Model\SiteTree;
-use SilverStripe\Core\Config\Config;
-use SilverStripe\Control\HTTPRequest;
-use Toast\ColourPalettes\Models\Colour;
-use SilverStripe\Core\Injector\Injector;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
 use SilverStripe\PolyExecution\PolyOutput;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use SilverStripe\FullTextSearch\Search\Updaters\SearchUpdater;
+use Symfony\Component\Console\Input\InputOption;
+use Toast\ColourPalettes\Helpers\Helper;
+use Toast\ColourPalettes\Models\Colour;
 
+/**
+ * Migrates colour data from the m4 module (Colour.Colour / Colour.CustomColourID and the ColourPalette
+ * table) to the m6 structure (Colour.HexValue / Colour.CSSName and has_one Colour relations).
+ *
+ * Safe to run more than once. Run with `--dry-run` to see what would change:
+ *
+ *     sake tasks:UpdateColoursTask --dry-run
+ *     sake tasks:UpdateColoursTask
+ *
+ * Extensions can use `onBeforeMigrateColours`, `onAfterMigrateColours` and `updateMigratedParent`.
+ */
 class UpdateColoursTask extends BuildTask
 {
     protected static string $commandName = 'UpdateColoursTask';
@@ -26,85 +31,140 @@ class UpdateColoursTask extends BuildTask
 
     protected static string $description = 'Updates the Colours table to be compatible with m6';
 
-    protected function execute(InputInterface $input, PolyOutput $output): int
+    public function getOptions(): array
     {
-
-        $colours = DB::query('SELECT * FROM "Colour"');
-        foreach ($colours as $colour) {
-            // cssname is the new customcolourid
-            $existingColour = Colour::get()->byID($colour['ID']);
-            if (!$existingColour) {
-                echo "Could not find Colour ID {$colour['ID']} <br>" . PHP_EOL;
-                continue;
-            }
-            // skip if $colour['Colour'] is empty
-            if (!$colour['Colour']) {
-                echo "Skipping Colour ID {$colour['ID']} as it has no Colour value <br>" . PHP_EOL;
-                continue;
-            }
-            // skip if cssname already exists
-            if($existingColour->CSSName && $existingColour->HexValue) {
-                continue;
-            }
-            $existingColour->CSSName = $colour['CustomColourID'];
-            $existingColour->HexValue = $colour['Colour'];
-            $existingColour->write();
-            echo "Updated Colour ID {$colour['ID']} with CSSName {$colour['CustomColourID']} and HexValue {$colour['Colour']} <br>" . PHP_EOL;
-        }
-
-        // query the ColourPalette table for all records
-        $colourPalettes = DB::query('SELECT * FROM "ColourPalette" WHERE "ColourID" != 0');
-
-        foreach($colourPalettes as $palette) {
-            if(!$palette['ColourID']) {
-                echo "Skipping ColourPalette ID {$palette['ID']} as it has no ColourID <br>" . PHP_EOL;
-                continue;
-            }
-            // palette title is the fieldname
-            // ParentClass the object class - could be instanceof SiteConfig or Page or DataObject
-            // ParentID the ID of the object
-            $fieldName = $palette['Title'];
-            $objectClass = $palette['ParentClass'];
-            $objectID = $palette['ParentID'];
-
-            // check the object class exists
-            if(!class_exists($objectClass)) {
-                echo "Skipping ColourPalette ID {$palette['ID']} as class {$objectClass} does not exist <br>" . PHP_EOL;
-                continue;
-            }
-            // we want to find the parent object and define the colour to be the fieldname of the object
-            $parentObject = $objectClass::get()->byID($objectID);
-            echo "Processing ColourPalette ID {$palette['ID']} for {$objectClass} ID {$objectID} <br>" . PHP_EOL;
-            // echo $parentObject instanceof Block ? 'true<br>' : 'false<br>';
-            // if instance of block check with block
-            if ($parentObject instanceof Block) {
-                $parentObject = Block::get()->byID($objectID);
-                echo "Found Block parent object <br>" . PHP_EOL;
-            }
-            if (!$parentObject) {
-                echo "Could not find parent object for ColourPalette ID {$palette['ID']} <br>" . PHP_EOL;
-                continue;
-            }
-            if (!$parentObject->{$fieldName . 'ID'}) {
-                echo "Parent object {$parentObject} does not have field {$fieldName}ID for ColourPalette ID {$palette['ID']} <br>" . PHP_EOL;
-                continue;
-            }
-            // update the field to be the ColourID
-            $parentObject->{$fieldName . 'ID'} = $palette['ColourID'];
-            $parentObject->write();
-            if ($parentObject instanceof Block || $parentObject instanceof SiteTree) {
-                // if block or site tree, publish the object
-                $parentObject->publishRecursive();
-                echo "Published parent object <br>" . PHP_EOL;
-            }
-
-            echo "Migrated ColourPalette ID {$objectID} to Colour ID {$palette['ColourID']} <br>" . PHP_EOL;
-        }
-
-        //echo the total number of colourpalettes processed
-        echo "Processed " . $colourPalettes->numRecords() . " ColourPalettes." . PHP_EOL;
-        
-        return Command::SUCCESS;
+        return [
+            new InputOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would change without writing anything'),
+        ];
     }
 
+    protected function execute(InputInterface $input, PolyOutput $output): int
+    {
+        $dryRun = (bool) $input->getOption('dry-run');
+
+        $this->extend('onBeforeMigrateColours', $dryRun);
+
+        if ($dryRun) {
+            $output->writeln('<comment>Dry run: nothing will be written</comment>');
+        }
+
+        $result = Helper::withoutCSSGeneration(function () use ($output, $dryRun): int {
+            $colours = $this->migrateColours($output, $dryRun);
+            $relations = $this->migrateColourPalettes($output, $dryRun);
+
+            $output->writeln("Updated {$colours} colours and {$relations} colour relations.");
+
+            return Command::SUCCESS;
+        });
+
+        $this->extend('onAfterMigrateColours', $dryRun);
+
+        return $result;
+    }
+
+    /**
+     * Copy the legacy Colour / CustomColourID fields into HexValue / CSSName.
+     *
+     * @return int The number of colours updated
+     */
+    protected function migrateColours(PolyOutput $output, bool $dryRun): int
+    {
+        $updated = 0;
+
+        /** @var Colour $colour */
+        foreach (Colour::get() as $colour) {
+            // Skip if already migrated
+            if ($colour->CSSName && $colour->HexValue) {
+                continue;
+            }
+
+            if (!$colour->Colour) {
+                $output->writeln("Skipping Colour ID {$colour->ID} as it has no legacy Colour value");
+                continue;
+            }
+
+            if (!$colour->CSSName && $colour->CustomColourID) {
+                $colour->CSSName = $colour->CustomColourID;
+            }
+
+            if (!$colour->HexValue) {
+                $colour->HexValue = $colour->Colour;
+            }
+
+            if (!$dryRun) {
+                $colour->write();
+            }
+
+            $updated++;
+            $output->writeln("Updated Colour ID {$colour->ID} with CSSName {$colour->CSSName} and HexValue {$colour->HexValue}");
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Point each parent's `{Field}ID` relation at the Colour recorded in the legacy ColourPalette table.
+     *
+     * @return int The number of relations updated
+     */
+    protected function migrateColourPalettes(PolyOutput $output, bool $dryRun): int
+    {
+        if (!DB::get_schema()->hasTable('ColourPalette')) {
+            $output->writeln('No ColourPalette table found, nothing to migrate');
+            return 0;
+        }
+
+        $updated = 0;
+        $palettes = DB::query('SELECT * FROM "ColourPalette" WHERE "ColourID" != 0');
+
+        foreach ($palettes as $palette) {
+            // The palette title is the field name, ParentClass / ParentID point at the object that owns it
+            $fieldName = $palette['Title'];
+            $objectClass = $palette['ParentClass'];
+            $objectID = (int) $palette['ParentID'];
+            $relationField = $fieldName . 'ID';
+
+            if (!class_exists($objectClass) || !is_a($objectClass, DataObject::class, true)) {
+                $output->writeln("Skipping ColourPalette ID {$palette['ID']} as class {$objectClass} does not exist");
+                continue;
+            }
+
+            /** @var DataObject|null $parentObject */
+            $parentObject = $objectClass::get()->byID($objectID);
+
+            if (!$parentObject) {
+                $output->writeln("Could not find {$objectClass} ID {$objectID} for ColourPalette ID {$palette['ID']}");
+                continue;
+            }
+
+            if (!$parentObject->hasField($relationField)) {
+                $output->writeln("{$objectClass} ID {$objectID} does not have field {$relationField} for ColourPalette ID {$palette['ID']}");
+                continue;
+            }
+
+            $this->extend('updateMigratedParent', $parentObject, $palette);
+
+            if ($dryRun) {
+                $updated++;
+                $output->writeln("Would set {$objectClass} ID {$objectID} {$relationField} to Colour ID {$palette['ColourID']}");
+                continue;
+            }
+
+            // Only republish records that were published before the change
+            $wasPublished = $parentObject->hasMethod('isPublished') && $parentObject->isPublished();
+
+            $parentObject->$relationField = $palette['ColourID'];
+            $parentObject->write();
+
+            if ($wasPublished && $parentObject->hasMethod('publishRecursive')) {
+                $parentObject->publishRecursive();
+                $output->writeln("Published {$objectClass} ID {$objectID}");
+            }
+
+            $updated++;
+            $output->writeln("Migrated ColourPalette ID {$palette['ID']} to Colour ID {$palette['ColourID']}");
+        }
+
+        return $updated;
+    }
 }

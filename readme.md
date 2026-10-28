@@ -53,28 +53,32 @@ Contrast colours are the colours used when generating the css variables, on-dark
 To add a colour palette field to a class, you can use the following code as an example:
 
 ``` php
-use Toast\ColourPalettes\Models\ColourPalette;
+use Toast\ColourPalettes\Models\Colour;
 use Toast\ColourPalettes\Fields\ColourPaletteField;
 
 class YourClass extends DataObject
 {
-    private static $has_one = [
+    private static array $has_one = [
         'PrimaryColour' => Colour::class,
         'SecondaryColour' => Colour::class,
     ];
 
-    public function updateCMSFields(FieldList $fields)
+    public function getCMSFields(): FieldList
     {
-        $fields->removeByName([
-            'PrimaryColourID',
-            'SecondaryColourID',
-        ]);
+        $this->beforeUpdateCMSFields(function (FieldList $fields) {
+            $fields->removeByName([
+                'PrimaryColourID',
+                'SecondaryColourID',
+            ]);
 
-        // Add the colour palette field to the class
-        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('PrimaryColour', 'Primary Colour'));
+            // Add the colour palette field to the class (the name is the has_one relation name)
+            $fields->addFieldToTab('Root.Main', ColourPaletteField::create('PrimaryColour', 'Primary Colour'));
 
-        // Optionally add a groups as an array to the field as the 3rd parameter
-        $fields->addFieldToTab('Root.Main', ColourPaletteField::create('SecondaryColour', 'Secondary Colour', ['Products']));
+            // Optionally add groups as an array to the field as the 3rd parameter
+            $fields->addFieldToTab('Root.Main', ColourPaletteField::create('SecondaryColour', 'Secondary Colour', ['Products']));
+        });
+
+        return parent::getCMSFields();
     }
 }
 ```
@@ -169,9 +173,10 @@ $FirstColour($Colour1, $Colour2, etc)
 $ColourByName('primary')
 ```
 
-#### Access a colour by its given name in colours.yml config while using subsites
+#### Access a colour by its given name for a specific SiteConfig (e.g. a subsite's config)
+By default the colour is looked up in the current SiteConfig. The second argument is a SiteConfig ID, not a Subsite ID.
 ``` ss
-$ColourByName('primary', $SubsiteID)
+$ColourByName('primary', $SubsiteConfig.ID)
 ```
 
 #### Access a colour by ID (probably don't need this ever, but it's here)
@@ -183,4 +188,70 @@ $ColourByID(1)
 ``` ss
 $LightenColour('primary', 50)
 $DarkenColour('primary', 50)
+```
+Both accept a colour ID or a CSS name.
+
+
+### Generated CSS
+The theme and editor CSS files are written to `assets/styles` inside the public folder, and the theme CSS is inlined on every page. Both can be changed:
+
+``` yml
+SilverStripe\SiteConfig\SiteConfig:
+  # Folder inside the public folder
+  css_folder: 'assets/styles'
+  # Or a path relative to the project root (takes precedence over css_folder)
+  # css_folder_path: '/public/assets/styles/'
+  # Link the theme CSS file instead of inlining it, so browsers can cache it
+  inline_theme_css: false
+```
+
+Locked colours (default colours with a value in config) are also protected server side, so their title and hex value can't be changed by editing the form data.
+
+### Requirements
+Silverstripe CMS 6, PHP 8.3+. After installing or upgrading, run `sake db:build --flush`.
+
+### Extending the module
+Every method that returns a computed value passes it through an `update*` extension hook, so you can change behaviour without subclassing. Hooks are `protected` methods on an `Extension` (`SilverStripe\Core\Extension`).
+
+| Class | Apply the extension to | Example hooks |
+|---|---|---|
+| Colour model | `Toast\ColourPalettes\Models\Colour` | `updateBrightness`, `updateValue`, `updateLightenedBy`, `updateDarkenedBy`, `updateHSL`, `updateColourCSS`, `updateScopedStyles`, `updateDefaultColours`, `updateColourRestrictions`, `onAfterCreateDefaultColours`, `onBeforeGenerateCSS` |
+| Helper (static helpers) | `Toast\ColourPalettes\Helpers\Helper` | `updateCurrentSiteConfig`, `updateIsSuperAdmin`, `updateColourPaletteArray`, `updateColoursForTinyMCE`, `updateContrastColours`, `updateCSSStyles`, `onAfterGenerateCSSFiles` |
+| SiteConfig | `SilverStripe\SiteConfig\SiteConfig` | `updateColoursForCMS`, `updateThemeColoursForCMS`, `updateSiteColourCSSVars` |
+| Controllers | `SilverStripe\Control\Controller` | `updateColourByName`, `updateColourByID`, `updateLightenColour`, `updateDarkenColour` |
+| ColourPaletteField | `Toast\ColourPalettes\Fields\ColourPaletteField` | `updateColourPaletteSource`, `onBeforeSaveInto`, `onAfterSaveInto` |
+
+``` php
+use SilverStripe\Core\Extension;
+use Toast\ColourPalettes\Models\Colour;
+
+/**
+ * @extends Extension<Colour>
+ */
+class ColourExtension extends Extension
+{
+    // Treat anything under 20% luminance as dark, whatever the YIQ calculation says
+    protected function updateBrightness(string &$brightness): void
+    {
+        if (($this->getOwner()->getLuminance() ?? 100) < 20) {
+            $brightness = 'dark';
+        }
+    }
+}
+```
+
+``` yml
+Toast\ColourPalettes\Models\Colour:
+  extensions:
+    - App\Extensions\ColourExtension
+```
+
+When writing many colours in code, wrap the writes in `Helper::withoutCSSGeneration(function () { ... })` so the CSS files are only generated once at the end.
+
+### Upgrading from the m4 module
+Run the migration task to move the old `Colour.Colour` / `Colour.CustomColourID` values and `ColourPalette` relations across. It can be run more than once, and `--dry-run` shows what would change:
+
+``` bash
+sake tasks:UpdateColoursTask --dry-run
+sake tasks:UpdateColoursTask
 ```

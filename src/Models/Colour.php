@@ -2,54 +2,93 @@
 
 namespace Toast\ColourPalettes\Models;
 
-use SilverStripe\ORM\DB;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\Forms\TextField;
-use SilverStripe\Model\ArrayData;
-use TractorCow\Colorpicker\Color;
-use SilverStripe\Security\Security;
-use SilverStripe\View\Requirements;
+use SilverStripe\Core\Validation\ValidationResult;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\ListboxField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\OptionsetField;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Model\ArrayData;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
+use SilverStripe\Security\Security;
 use SilverStripe\SiteConfig\SiteConfig;
+use SilverStripe\View\Requirements;
 use Toast\ColourPalettes\Helpers\Helper;
+use TractorCow\Colorpicker\Color;
 use TractorCow\Colorpicker\Forms\ColorField;
 
+/**
+ * A single colour in a site's palette.
+ *
+ * Every public method that returns a computed value passes it through an `update*` extension hook
+ * (e.g. `updateBrightness`, `updateLightenedBy`), so projects can adjust results without subclassing.
+ *
+ * @property string $Title
+ * @property string $HexValue Hex code without the leading #
+ * @property string $CSSName
+ * @property string $Colour Legacy field, superseded by HexValue
+ * @property string $CustomColourID Legacy field, superseded by CSSName
+ * @property string $Groups JSON encoded list of group names
+ * @property string $ContrastColour 'light' or 'dark'
+ * @property bool $IsThemeColour
+ * @property int $SortOrder
+ * @property int $ReferenceColourID
+ * @method Colour ReferenceColour()
+ */
 class Colour extends DataObject
 {
-    private static $table_name = 'Colour';
+    private static string $table_name = 'Colour';
 
-    private static $db = [
+    /**
+     * @var array<string, string>
+     */
+    private static array $db = [
         'Title'          => 'Varchar(255)',
         'HexValue'       => Color::class,
         'CSSName'        => 'Varchar(255)',
-        'Colour'        =>   'Color', // Legacy field, to be removed in future
+        'Colour'         => 'Color', // Legacy field, to be removed in future
         'CustomColourID' => 'Varchar(255)', // Legacy field, to be removed in future
         'Groups'         => 'Text',
         'ContrastColour' => 'Varchar(8)',
-        'IsThemeColour' => 'Boolean(0)',
+        'IsThemeColour'  => 'Boolean(0)',
         'SortOrder'      => 'Int',
     ];
 
-    private static $has_one = [
+    /**
+     * @var array<string, class-string>
+     */
+    private static array $has_one = [
         'ReferenceColour' => self::class,
     ];
 
-    private static $belongs_many_many = [
-        'SiteConfigs' => SiteConfig::class
+    /**
+     * @var array<string, class-string>
+     */
+    private static array $belongs_many_many = [
+        'SiteConfigs' => SiteConfig::class,
     ];
 
-    private static $summary_fields = [
-        'Title' => 'Title',
+    /**
+     * @var array<string, bool|string>
+     */
+    private static array $indexes = [
+        'CSSName' => true,
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    private static array $summary_fields = [
+        'Title'             => 'Title',
         'HexValue.ColorCMS' => 'Colour',
-        'getGroupsSummary' => 'Groups',
-        'getCSSReference' => 'CSS Reference',
+        'getGroupsSummary'  => 'Groups',
+        'getCSSReference'   => 'CSS Reference',
     ];
 
-    private static $default_sort = 'ID ASC';
+    private static string $default_sort = 'ID ASC';
 
-    public function getCMSFields()
+    public function getCMSFields(): FieldList
     {
         Requirements::css('toastnz/colourpalettes: client/dist/styles/main.css');
         Requirements::javascript('toastnz/colourpalettes: client/dist/scripts/accessibility.js');
@@ -71,13 +110,13 @@ class Colour extends DataObject
             'ReferenceColourID',
             'IsThemeColour',
             'Colour', // Legacy field, to be removed in future
-            'CustomColourID' // Legacy field, to be removed in future
+            'CustomColourID', // Legacy field, to be removed in future
         ]);
 
         // Add the necessary fields to the Main tab
         $fields->addFieldsToTab('Root.Main', [
             TextField::create('Title', 'Title')->setReadOnly(!$canChangeColour),
-            ColorField::create('HexValue', 'Hex Code Value')->setReadOnly(!$canChangeColour)
+            ColorField::create('HexValue', 'Hex Code Value')->setReadOnly(!$canChangeColour),
         ]);
 
         if ($this->HexValue) {
@@ -85,14 +124,14 @@ class Colour extends DataObject
                 'HexValue',
                 OptionsetField::create('ContrastColour', 'Select the option with the highest contrast', [
                     'light' => 'Light',
-                    'dark' => 'Dark'
-                ])->setDescription('Click on the text colour to be used when this theme colour is used as a background. If left unselected, a calculation will be made to determine the best text colour for legibility.'),
+                    'dark'  => 'Dark',
+                ])->setDescription('Click on the text colour to be used when this theme colour is used as a background. If left unselected, a calculation will be made to determine the best text colour for legibility.')
             );
         }
 
         if (!$canChangeColour) {
             $fields->addFieldToTab('Root.Main', LiteralField::create('ReadOnlyNotice', '<p class="message warning">This colour cannot be changed or removed.</p>'));
-        } else if (!$canRemoveColour) {
+        } elseif (!$canRemoveColour) {
             $fields->addFieldToTab('Root.Main', LiteralField::create('ReadOnlyNotice', '<p class="message warning">This colour cannot be removed.</p>'));
         }
 
@@ -102,126 +141,218 @@ class Colour extends DataObject
         return $fields;
     }
 
-    public function getCMSGroupsField($fields)
+    /**
+     * Add the Groups field to the CMS fields (only when groups are configured).
+     */
+    public function getCMSGroupsField(FieldList $fields): void
     {
         // Get the colour groups from the config
         $groups = $this->getColourGroupsConfig();
 
-        // If there are no groups, return the fields now
-        if (count($groups) == 0) return null;
+        // If there are no groups, there is nothing to select
+        if (!$groups) {
+            return;
+        }
 
         // Add a new group called "Global" to the array
         $groups = array_merge(['Global' => 'Global'], $groups);
 
-        $fields->addFieldToTab('Root.Main', ListboxField::create('Groups', 'Groups', $groups)->setDescription('Select the groups this colour belongs to. If left blank, it will be treated as a global colour.'));
+        $groupsField = ListboxField::create('Groups', 'Groups', $groups)
+            ->setDescription('Select the groups this colour belongs to. If left blank, it will be treated as a global colour.');
+
+        $this->extend('updateCMSGroupsField', $groupsField, $fields);
+
+        $fields->addFieldToTab('Root.Main', $groupsField);
     }
 
-    // Ensure the Colour has a Hex Value before saving
-    // public function validate(): ValidationResult
-    // {
-    //     $result = parent::validate();
-    //     if ($this->isInDB()) {
-    //         if(!$this->HexValue){
-    //             $result->addFieldError('HexValue', 'A valid Hex Value for ' . $this->Title . ' is required.');
-    //         }
-    //     }
-    //     return $result;
-    // }
-
-    public function canDelete($member = null)
+    /**
+     * Enforce the read-only state of locked default colours server side (the CMS fields are only disabled).
+     * Setting a value for the first time (e.g. a legacy migration) is still allowed.
+     */
+    public function validate(): ValidationResult
     {
-        return $this->getColourRestrictions()->canRemove;
+        $result = parent::validate();
+
+        if ($this->isInDB() && !$this->getColourRestrictions()->canChange) {
+            $changed = $this->getChangedFields(true, DataObject::CHANGE_VALUE);
+
+            foreach (['Title', 'HexValue'] as $field) {
+                if (isset($changed[$field]) && (string) $changed[$field]['before'] !== '') {
+                    $result->addFieldError($field, sprintf('%s cannot be changed for the "%s" colour.', $field, $this->CSSName));
+                }
+            }
+        }
+
+        return $result;
     }
 
-    public function getColourRestrictions($member = null)
+    /**
+     * @param \SilverStripe\Security\Member|null $member
+     */
+    public function canDelete($member = null): bool
     {
-        $defaultColours = $this->getDefaultColours();
+        // Colours defined in config can never be removed
+        if (!$this->getColourRestrictions()->canRemove) {
+            return false;
+        }
+
+        return (bool) parent::canDelete($member);
+    }
+
+    /**
+     * Work out whether this colour can be changed / removed, based on the default_colours config.
+     * A default colour can't be removed, and if the config gives it a value it can't be changed either.
+     *
+     * @return object{canChange: bool, canRemove: bool}
+     */
+    public function getColourRestrictions(): object
+    {
         $canChange = true;
         $canRemove = true;
 
-        if (count($defaultColours) > 0) {
-            foreach ($defaultColours as $colour) {
-                $colourKey = key($colour);
-                $colourValue = $colour[$colourKey];
+        $defaultColours = $this->getDefaultColours();
+        $cssName = (string) $this->CSSName;
 
-                // If the CSSName matches the key, we cannot remove it
-                if ($this->CSSName == $colourKey) {
-                    $canRemove = false;
-                }
+        if ($cssName !== '' && array_key_exists($cssName, $defaultColours)) {
+            $canRemove = false;
 
-                // If the CSSName matches the key, and there is a value, we cannot change it
-                if ($this->CSSName == $colourKey && $colourValue) {
-                    $canChange = false;
-                    break;
-                }
+            if ($defaultColours[$cssName]) {
+                $canChange = false;
             }
         }
 
-        return (object)[
+        $restrictions = (object) [
             'canChange' => $canChange,
-            'canRemove' => $canRemove
+            'canRemove' => $canRemove,
         ];
+
+        $this->extend('updateColourRestrictions', $restrictions);
+
+        return $restrictions;
     }
 
-
-    public function requireDefaultRecords()
+    public function requireDefaultRecords(): void
     {
         parent::requireDefaultRecords();
+
         $siteConfig = Helper::getCurrentSiteConfig();
-        if (!$siteConfig) return;
-        $defaultColours = $this->getDefaultColours();
-        $themeColours = $this->getThemeColours();
-        if (count($defaultColours) == 0) return;
 
-        // 1. Migrate CustomColourID to CSSName if needed
-        if (self::singleton()->hasField('CustomColourID') && self::singleton()->hasField('Colour')) {
-            $toMigrate = self::get()->filter(['CSSName' => null])->exclude(['CustomColourID' => null]);
-            foreach ($toMigrate as $legacy) {
-                if (!$legacy->Colour) {
-                    continue;
-                }
-                $legacy->CSSName = $legacy->CustomColourID;
-                $legacy->HexValue = $legacy->Colour; // Migrate the HexValue too
-                $legacy->write();
-            }
+        if (!$siteConfig) {
+            return;
         }
 
-        // 2. Only create missing default colours by CSSName or legacy CustomColourID
-        foreach ($defaultColours as $colour) {
-            $colourKey = key($colour);
-            $colourValue = $colour[$colourKey];
-            $exists = $siteConfig->Colours()->filterAny([
-                'CSSName:nocase' => $colourKey
-            ]);
-            // If CustomColourID exists, check it too
-            if (self::get()->hasField('CustomColourID')) {
-                $exists = $siteConfig->Colours()->filterAny([
-                    'CSSName:nocase' => $colourKey,
-                    'CustomColourID:nocase' => $colourKey
-                ]);
-            }
-            if ($exists->count() > 0) {
-                continue;
-            }
-            $colourObj = new self();
-            $colourObj->CSSName = $colourKey;
-            if ($colourValue) $colourObj->HexValue = $colourValue;
-
-            // If this is a theme colour, set the flag
-            if (in_array($colourKey, $themeColours)) {
-                $colourObj->IsThemeColour = true;
-            }
-
-            $colourObj->write();
-            $siteConfig->Colours()->add($colourObj->ID);
-            DB::alteration_message("Colour '$colourKey' created", 'created');
-        }
+        $this->createDefaultColours($siteConfig);
     }
 
-    // Method to return the hex code
-    public function getValue()
+    /**
+     * Migrate legacy fields, then create any default colours (from the default_colours config)
+     * that are missing from the given SiteConfig.
+     *
+     * @return Colour[] The newly created colours
+     */
+    public function createDefaultColours(?SiteConfig $siteConfig = null): array
     {
-        return $this->HexValue ? '#' . $this->HexValue : 'transparent';
+        $siteConfig ??= Helper::getCurrentSiteConfig();
+
+        if (!$siteConfig) {
+            return [];
+        }
+
+        return Helper::withoutCSSGeneration(function () use ($siteConfig): array {
+            $created = [];
+
+            // 1. Migrate CustomColourID / Colour to CSSName / HexValue
+            $this->migrateLegacyFields();
+
+            // 2. Only create missing default colours (matched by CSSName, or legacy CustomColourID)
+            $themeColours = $this->getThemeColours();
+
+            foreach ($this->getDefaultColours() as $cssName => $hexValue) {
+                $exists = $siteConfig->Colours()->filterAny([
+                    'CSSName:nocase'        => $cssName,
+                    'CustomColourID:nocase' => $cssName,
+                ])->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $colour = static::create();
+                $colour->CSSName = $cssName;
+
+                if ($hexValue) {
+                    $colour->HexValue = $hexValue;
+                }
+
+                // If this is a theme colour, set the flag
+                $colour->IsThemeColour = in_array($cssName, $themeColours, true);
+                $colour->write();
+
+                $siteConfig->Colours()->add($colour->ID);
+                $created[] = $colour;
+
+                DB::alteration_message("Colour '{$cssName}' created", 'created');
+            }
+
+            $this->extend('onAfterCreateDefaultColours', $created, $siteConfig);
+
+            return $created;
+        });
+    }
+
+    /**
+     * Copy the legacy Colour / CustomColourID fields into HexValue / CSSName.
+     * Safe to run repeatedly, only colours that haven't been migrated yet are touched.
+     */
+    public function migrateLegacyFields(): int
+    {
+        $migrated = 0;
+
+        $toMigrate = static::get()
+            ->where('"Colour"."CSSName" IS NULL OR "Colour"."CSSName" = \'\'')
+            ->where('"Colour"."CustomColourID" IS NOT NULL AND "Colour"."CustomColourID" != \'\'');
+
+        foreach ($toMigrate as $legacy) {
+            if (!$legacy->Colour) {
+                continue;
+            }
+
+            $legacy->CSSName = $legacy->CustomColourID;
+            $legacy->HexValue = $legacy->Colour;
+            $legacy->write();
+            $migrated++;
+        }
+
+        return $migrated;
+    }
+
+    /**
+     * After a database build, sync the theme colour flags with config and regenerate the CSS files.
+     */
+    public function onAfterBuild(): void
+    {
+        parent::onAfterBuild();
+
+        if (!Security::database_is_ready() || !Helper::getCurrentSiteConfig()) {
+            return;
+        }
+
+        Helper::setThemeColours();
+        Helper::generateCSSFiles();
+    }
+
+    /**
+     * Get the CSS colour value, e.g. '#ff0000', or 'transparent' if there is no hex value.
+     */
+    public function getValue(): string
+    {
+        // Only output valid hex, as the value is written straight into generated / inline CSS
+        $hex = (string) $this->HexValue;
+        $value = preg_match('/^[a-fA-F0-9]{3,8}$/', $hex) ? '#' . $hex : 'transparent';
+
+        $this->extend('updateValue', $value);
+
+        return $value;
     }
 
     /**
@@ -241,139 +372,149 @@ class Colour extends DataObject
     }
 
     /**
-     * Returns 'light' or 'dark' based on the colour's brightness.
+     * Returns 'light' or 'dark' based on the colour's brightness, unless a ContrastColour has been chosen.
      * Handles 3/6 digit hex and validates input.
      */
     public function getBrightness(): string
     {
+        $brightness = 'light'; // fallback
+
         if ($this->ContrastColour) {
-            return $this->ContrastColour;
+            $brightness = (string) $this->ContrastColour;
+        } elseif ($rgb = $this->getColourRGBArray()) {
+            [$r, $g, $b] = $rgb;
+            $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
+            $brightness = ($yiq >= 130) ? 'light' : 'dark';
         }
-        $hex = preg_replace('/[^a-fA-F0-9]/', '', (string)$this->HexValue);
-        if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-        }
-        if (strlen($hex) !== 6) {
-            return 'light'; // fallback
-        }
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-        $yiq = (($r * 299) + ($g * 587) + ($b * 114)) / 1000;
-        return ($yiq >= 130) ? 'light' : 'dark';
+
+        $this->extend('updateBrightness', $brightness);
+
+        return $brightness;
     }
 
     /**
-     * Converts the colour's hex value to an HSL array: ['H' => ..., 'S' => ..., 'L' => ...]
-     * Optionally adjusts H, S, and L by the given amounts.
+     * Converts the colour's hex value to HSL: ['H' => 0-360, 'S' => 0-100, 'L' => 0-100].
+     * Optionally adjusts H (wraps around), S and L (clamped) by the given amounts.
      * Returns null if the hex value is invalid.
      */
     public function getHSL(int $hAdjust = 0, int $sAdjust = 0, int $lAdjust = 0): ?ArrayData
     {
-        $hex = preg_replace('/[^a-fA-F0-9]/', '', (string)$this->HexValue);
+        $hsl = null;
+
+        if ($rgb = $this->getColourRGBArray()) {
+            [$r, $g, $b] = array_map(fn(int $channel) => $channel / 255, $rgb);
+
+            $max = max($r, $g, $b);
+            $min = min($r, $g, $b);
+            $h = $s = 0.0;
+            $l = ($max + $min) / 2;
+
+            if ($max !== $min) {
+                $d = $max - $min;
+                $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+                $h = match ($max) {
+                    $r      => ($g - $b) / $d + ($g < $b ? 6 : 0),
+                    $g      => ($b - $r) / $d + 2,
+                    default => ($r - $g) / $d + 4,
+                };
+                $h /= 6;
+            }
+
+            $hsl = ArrayData::create([
+                'H' => (((int) round($h * 360) + $hAdjust) % 360 + 360) % 360,
+                'S' => max(0, min(100, (int) round($s * 100) + $sAdjust)),
+                'L' => max(0, min(100, (int) round($l * 100) + $lAdjust)),
+            ]);
+        }
+
+        $this->extend('updateHSL', $hsl, $hAdjust, $sAdjust, $lAdjust);
+
+        return $hsl;
+    }
+
+    /**
+     * Relative luminance (WCAG) scaled to 0-100, or null if the hex value is invalid.
+     */
+    public function getLuminance(): ?int
+    {
+        $luminance = null;
+
+        if ($rgb = $this->getColourRGBArray()) {
+            [$r, $g, $b] = array_map(function (int $channel): float {
+                $channel /= 255;
+                return ($channel <= 0.03928) ? $channel / 12.92 : (($channel + 0.055) / 1.055) ** 2.4;
+            }, $rgb);
+
+            $luminance = (int) round(((0.2126 * $r) + (0.7152 * $g) + (0.0722 * $b)) * 100);
+        }
+
+        $this->extend('updateLuminance', $luminance);
+
+        return $luminance;
+    }
+
+    /**
+     * The colour as [r, g, b] integers (0-255), or null if the hex value is missing / invalid.
+     * Accepts 3 and 6 digit hex.
+     *
+     * @return int[]|null
+     */
+    public function getColourRGBArray(): ?array
+    {
+        $hex = preg_replace('/[^a-fA-F0-9]/', '', (string) $this->HexValue);
 
         if (strlen($hex) === 3) {
             $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
         }
 
-        if (strlen($hex) !== 6) {
+        $rgb = strlen($hex) === 6
+            ? [(int) hexdec(substr($hex, 0, 2)), (int) hexdec(substr($hex, 2, 2)), (int) hexdec(substr($hex, 4, 2))]
+            : null;
+
+        $this->extend('updateColourRGBArray', $rgb);
+
+        return $rgb;
+    }
+
+    /**
+     * Lighten the colour by a percentage (0-100), returns a hex code with leading #.
+     */
+    public function getLightenedBy(int|float $amount = 0): ?string
+    {
+        $result = $this->shiftBrightness(abs($amount));
+
+        $this->extend('updateLightenedBy', $result, $amount);
+
+        return $result;
+    }
+
+    /**
+     * Darken the colour by a percentage (0-100), returns a hex code with leading #.
+     */
+    public function getDarkenedBy(int|float $amount = 0): ?string
+    {
+        $result = $this->shiftBrightness(-abs($amount));
+
+        $this->extend('updateDarkenedBy', $result, $amount);
+
+        return $result;
+    }
+
+    /**
+     * Add (or subtract if negative) a percentage of 255 to each channel.
+     */
+    protected function shiftBrightness(int|float $percent): ?string
+    {
+        $rgb = $this->getColourRGBArray();
+
+        if (!$rgb) {
             return null;
         }
 
-        $r = hexdec(substr($hex, 0, 2)) / 255;
-        $g = hexdec(substr($hex, 2, 2)) / 255;
-        $b = hexdec(substr($hex, 4, 2)) / 255;
+        $offset = 255 * max(-100, min(100, $percent)) / 100;
+        [$r, $g, $b] = array_map(fn(int $channel) => (int) max(0, min(255, $channel + $offset)), $rgb);
 
-        $max = max($r, $g, $b);
-        $min = min($r, $g, $b);
-        $h = $s = $l = ($max + $min) / 2;
-
-        if ($max == $min) {
-            $h = $s = 0; // achromatic
-        } else {
-            $d = $max - $min;
-            $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
-            switch ($max) {
-                case $r:
-                    $h = ($g - $b) / $d + ($g < $b ? 6 : 0);
-                    break;
-                case $g:
-                    $h = ($b - $r) / $d + 2;
-                    break;
-                case $b:
-                    $h = ($r - $g) / $d + 4;
-                    break;
-            }
-            $h /= 6;
-        }
-
-        // Convert to integer values and apply adjustments
-        return ArrayData::create([
-            'H' => max(0, min(360, round($h * 360) + $hAdjust)),
-            'S' => max(0, min(100, round($s * 100) + $sAdjust)),
-            'L' => max(0, min(100, round($l * 100) + $lAdjust))
-        ]);
-    }
-
-    public function getLuminance()
-    {
-        $rgb = $this->getColourRGBArray();
-
-        if (!$rgb) return null;
-
-        // Convert RGB to linear values
-        $r = $rgb[0] / 255;
-        $g = $rgb[1] / 255;
-        $b = $rgb[2] / 255;
-
-        $r = ($r <= 0.03928) ? $r / 12.92 : pow((($r + 0.055) / 1.055), 2.4);
-        $g = ($g <= 0.03928) ? $g / 12.92 : pow((($g + 0.055) / 1.055), 2.4);
-        $b = ($b <= 0.03928) ? $b / 12.92 : pow((($b + 0.055) / 1.055), 2.4);
-
-        // Calculate luminance and scale to 0-100
-        $luminance = (0.2126 * $r) + (0.7152 * $g) + (0.0722 * $b);
-        return round($luminance * 100);
-    }
-
-    public function getColourRGBArray(): ?array
-    {
-        $value = $this->getValue();
-        if (!$value) return null;
-        return sscanf($value, "#%02x%02x%02x");
-    }
-
-    public function getLightenedBy($amount = 0): ?string
-    {
-        $rgb = $this->getColourRGBArray();
-
-        if (!$rgb) return null;
-
-        $amount = abs($amount);
-        $amount = min(100, $amount);
-        $percentage = (255 * $amount / 100);
-
-        $r = min(255, $rgb[0] + $percentage);
-        $g = min(255, $rgb[1] + $percentage);
-        $b = min(255, $rgb[2] + $percentage);
-
-        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
-    }
-
-    public function getDarkenedBy($amount = 0): ?string
-    {
-        $rgb = $this->getColourRGBArray();
-
-        if (!$rgb) return null;
-
-        $amount = abs($amount);
-        $amount = min(100, $amount);
-        $percentage = (255 * $amount / 100);
-
-        $r = max(0, $rgb[0] - $percentage);
-        $g = max(0, $rgb[1] - $percentage);
-        $b = max(0, $rgb[2] - $percentage);
-
-        return sprintf("#%02x%02x%02x", (int)$r, (int)$g, (int)$b);
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
     }
 
     /**
@@ -381,24 +522,32 @@ class Colour extends DataObject
      */
     public function getCSSVarName(string $relation): string
     {
-        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', str_replace('ID', '', $relation)));
+        $varName = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', preg_replace('/ID$/', '', $relation)));
+
+        $this->extend('updateCSSVarName', $varName, $relation);
+
+        return $varName;
     }
 
     /**
      * Returns an array of CSS variable definitions for this colour.
-     * @param string $relation
-     * @param string $prefix
+     *
      * @return string[]
      */
     public function getCSSVarsArray(string $relation, string $prefix = '--_'): array
     {
         $varName = $this->getCSSVarName($relation);
         $cssReference = $this->getCSSReference();
-        return [
+
+        $vars = [
             $prefix . $varName . ': var(--colour-' . $cssReference . ');',
             $prefix . $varName . '-contrast: var(--colour-' . $cssReference . '-contrast);',
             $prefix . $varName . '-on-contrast: var(--colour-' . $cssReference . '-on-contrast);',
         ];
+
+        $this->extend('updateCSSVarsArray', $vars, $relation, $prefix);
+
+        return $vars;
     }
 
     /**
@@ -406,7 +555,11 @@ class Colour extends DataObject
      */
     public function getCSSVars(string $relation = ''): string
     {
-        return implode('', $this->getCSSVarsArray($relation));
+        $vars = implode('', $this->getCSSVarsArray($relation));
+
+        $this->extend('updateCSSVars', $vars, $relation);
+
+        return $vars;
     }
 
     /**
@@ -414,7 +567,11 @@ class Colour extends DataObject
      */
     public function getRootVars(string $relation = ''): string
     {
-        return str_replace('--_', '--', $this->getCSSVars($relation));
+        $vars = str_replace('--_', '--', $this->getCSSVars($relation));
+
+        $this->extend('updateRootVars', $vars, $relation);
+
+        return $vars;
     }
 
     /**
@@ -423,10 +580,13 @@ class Colour extends DataObject
     public function getColourCSS(?string $target = null): string
     {
         $cssReference = $this->getCSSReference();
-        if (!$target) {
-            $target = '.colour-' . $cssReference;
-        }
-        return $target . ' { ' . $this->getCSSVars('colour') . ' color: var(--colour-' . $cssReference . '); }';
+        $target = $target ?: '.colour-' . $cssReference;
+
+        $css = $target . ' { ' . $this->getCSSVars('colour') . ' color: var(--colour-' . $cssReference . '); }';
+
+        $this->extend('updateColourCSS', $css, $target);
+
+        return $css;
     }
 
     /**
@@ -434,98 +594,162 @@ class Colour extends DataObject
      */
     public function getScopedStyles(string $relation, ?string $cssSelector = null): string
     {
-        if (!$relation) return '';
-        $varName = $this->getCSSVarName($relation);
-        $cssReference = $this->getCSSReference($relation);
-        $styles = '';
-        if ($cssSelector) {
-            $styles .= $cssSelector . ' {';
-            $styles .= implode('', $this->getCSSVarsArray($relation));
-            $styles .= '}';
-            $styles .= $cssSelector . '.cms-preview {';
-            $styles .= implode('', $this->getCSSVarsArray($relation, '--_preview-'));
-            $styles .= '}';
-        } else {
-            $styles .= $this->getRootVars($relation);
+        if (!$relation) {
+            return '';
         }
+
+        if ($cssSelector) {
+            $styles = $cssSelector . ' {' . implode('', $this->getCSSVarsArray($relation)) . '}';
+            $styles .= $cssSelector . '.cms-preview {' . implode('', $this->getCSSVarsArray($relation, '--_preview-')) . '}';
+        } else {
+            $styles = $this->getRootVars($relation);
+        }
+
+        $this->extend('updateScopedStyles', $styles, $relation, $cssSelector);
+
         return $styles;
     }
 
-    // Method to get the default colours from the yml config
-    protected function getDefaultColours()
+    /**
+     * The default_colours config as a map of CSS name => hex value (null if the value is editable).
+     * The config is written as a list of single-key maps, e.g. `- white: 'ffffff'`.
+     *
+     * @return array<string, string|null>
+     */
+    public function getDefaultColours(): array
     {
-        return $this->config()->get('default_colours') ?: [];
+        $defaultColours = static::normaliseConfigMap($this->config()->get('default_colours'));
+
+        $this->extend('updateDefaultColours', $defaultColours);
+
+        return $defaultColours;
     }
 
-    // Method to get all the theme colours from the yml config
-    protected function getThemeColours()
+    /**
+     * The CSS names of the theme colours from the theme_colours config.
+     *
+     * @return string[]
+     */
+    public function getThemeColours(): array
     {
-        return $this->config()->get('theme_colours') ?: [];
+        $themeColours = array_values($this->config()->get('theme_colours') ?: []);
+
+        $this->extend('updateThemeColours', $themeColours);
+
+        return $themeColours;
     }
 
-    public function getColourGroups()
+    /**
+     * Flatten a config list of single-key maps (or plain strings) into one map.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function normaliseConfigMap(?array $config): array
     {
-        return $this->Groups ? json_decode($this->Groups, true) : [];
+        $map = [];
+
+        foreach ($config ?: [] as $key => $item) {
+            if (is_array($item)) {
+                foreach ($item as $name => $value) {
+                    $map[(string) $name] = $value;
+                }
+            } elseif (is_string($key)) {
+                $map[$key] = $item;
+            } else {
+                $map[(string) $item] = null;
+            }
+        }
+
+        return $map;
     }
 
-    // A method to get the colour groups
-    public function getColourGroupsConfig()
+    /**
+     * The groups this colour belongs to.
+     *
+     * @return string[]
+     */
+    public function getColourGroups(): array
     {
-        $colourGroupsConfig = $this->config()->get('colour_groups') ?: [];
+        $groups = $this->Groups ? json_decode((string) $this->Groups, true) : [];
+        $groups = is_array($groups) ? $groups : [];
 
-        // Transform the array to use the title as the value
+        $this->extend('updateColourGroups', $groups);
+
+        return $groups;
+    }
+
+    /**
+     * The available colour groups from config, as a map of name => name (for dropdowns).
+     *
+     * @return array<string, string>
+     */
+    public function getColourGroupsConfig(): array
+    {
         $options = [];
-        foreach ($colourGroupsConfig as $group) {
+
+        foreach ($this->config()->get('colour_groups') ?: [] as $group) {
             $options[$group] = $group;
         }
+
+        $this->extend('updateColourGroupsConfig', $options);
 
         return $options;
     }
 
-    public function getGroupsSummary()
+    public function getGroupsSummary(): string
     {
         $groups = $this->getColourGroups();
+        $summary = $groups ? implode(', ', $groups) : 'Global';
 
-        if (empty($groups)) {
-            return 'Global';
+        $this->extend('updateGroupsSummary', $summary);
+
+        return $summary;
+    }
+
+    /**
+     * Regenerate the CSS files for the current site (no-op until the record exists).
+     */
+    public function generateCSS(): void
+    {
+        if (!$this->exists()) {
+            return;
         }
 
-        // Join the groups with a comma
-        return implode(', ', $groups);
-    }
+        $this->extend('onBeforeGenerateCSS');
 
-    public function generateCSS()
-    {
-        // Return if this Colour doesn't exist yet
-        if (!$this->exists()) return;
-        // Exit if the database is not ready
-        if (!Security::database_is_ready()) return;
-        // Return if there is no current site config
-        if (!Helper::getCurrentSiteConfig()) return;
-
-        // Generate the CSS files
         Helper::generateCSSFiles();
+
+        $this->extend('onAfterGenerateCSS');
     }
 
-    public function getCSSReference()
+    /**
+     * The name used in CSS variables / classes: the CSSName, falling back to the ID.
+     */
+    public function getCSSReference(): string
     {
-        return ($this->CSSName) ?? $this->ID;
+        // Restrict to characters that are valid in CSS custom property / class names
+        $reference = preg_replace('/[^a-zA-Z0-9_-]/', '-', (string) ($this->CSSName ?: $this->ID));
+
+        $this->extend('updateCSSReference', $reference);
+
+        return $reference;
     }
 
-    public function inheritColourFromReference($write = false)
+    /**
+     * Copy the hex and contrast values from the reference colour (theme colours only).
+     */
+    public function inheritColourFromReference(bool $write = false): void
     {
-        // Make sure this colour is a theme colour
-        if (!$this->IsThemeColour) return;
-        // Check if there is a reference colour set
-        if (!$this->ReferenceColourID) return;
-        // Prevent self-referencing
-        if ($this->ReferenceColourID == $this->ID) return;
+        // Only theme colours with a (different) reference colour inherit
+        if (!$this->IsThemeColour || !$this->ReferenceColourID || (int) $this->ReferenceColourID === (int) $this->ID) {
+            return;
+        }
 
-        // Get the reference colour
         $referenceColour = $this->ReferenceColour();
 
-        // If there is no reference colour, return
-        if (!$referenceColour || !$referenceColour->exists()) return;
+        if (!$referenceColour || !$referenceColour->exists()) {
+            return;
+        }
 
         $oldHexValue = $this->HexValue;
         $oldContrastColour = $this->ContrastColour;
@@ -534,67 +758,70 @@ class Colour extends DataObject
         $this->HexValue = $referenceColour->HexValue;
         $this->ContrastColour = $referenceColour->ContrastColour;
 
-        // Return here if we are not writing
-        if (!$write) return;
-        // Only write if there are changes
-        if ($this->HexValue === $oldHexValue && $this->ContrastColour === $oldContrastColour) return;
+        $this->extend('onAfterInheritColour', $referenceColour);
 
-        // Write the changes
-        $this->write();
+        // Only write if requested and there are changes
+        if ($write && ($this->HexValue !== $oldHexValue || $this->ContrastColour !== $oldContrastColour)) {
+            $this->write();
+        }
     }
 
-    public function onBeforeWrite()
+    protected function onBeforeWrite(): void
     {
         parent::onBeforeWrite();
 
-        // Use the CSSName if it exists, otherwise fallback to the ID
-        $cssName = $this->getCSSReference();
-        // Get all the theme colours from the config
-        $themeColours = Helper::getThemeColoursFromConfig();
+        // Set IsThemeColour based on whether the CSS name is in the theme colours list
+        $this->IsThemeColour = in_array($this->getCSSReference(), Helper::getThemeColoursFromConfig(), true);
 
-        // Set IsThemeColour based on whether the CSSName is in the theme colours list
-        $this->IsThemeColour = in_array($cssName, $themeColours);
-
-        // If the title is empty, set it to the CSSReference
-        if (!$this->Title) return $this->Title = $cssName;
+        // If the title is empty, fall back to the CSS name
+        if (!$this->Title) {
+            $this->Title = $this->CSSName ?: 'Colour';
+        }
 
         // Inherit the colour from the reference if set
         $this->inheritColourFromReference();
     }
 
-    // Make sure we regenerate the CSS after the record is written
-    public function onAfterWrite()
+    /**
+     * Update colours referencing this one, then regenerate the CSS (once) after the record is written.
+     */
+    protected function onAfterWrite(): void
     {
         parent::onAfterWrite();
 
-        // Loop through all the other colours, and check if any are referencing this one
-        $referencingColours = self::get()->filter('ReferenceColourID', $this->ID);
+        Helper::withoutCSSGeneration(function (): void {
+            /** @var Colour $colour */
+            foreach (static::get()->filter('ReferenceColourID', $this->ID) as $colour) {
+                $colour->inheritColourFromReference(true);
+            }
 
-        foreach ($referencingColours as $colour) {
-            $colour->inheritColourFromReference(true);
-        }
-
-        $this->generateCSS();
+            $this->generateCSS();
+        });
     }
 
-    public function onBeforeDelete()
+    protected function onBeforeDelete(): void
     {
         parent::onBeforeDelete();
 
-        // Loop through all the other colours, and check if any are referencing this one
-        $referencingColours = self::get()->filter('ReferenceColourID', $this->ID);
-
-        foreach ($referencingColours as $colour) {
-            $colour->ReferenceColourID = null;
-            $colour->HexValue = null;
-            $colour->ContrastColour = null;
-            $colour->write();
-        }
+        // Detach colours that reference this one
+        Helper::withoutCSSGeneration(function (): void {
+            /** @var Colour $colour */
+            foreach (static::get()->filter('ReferenceColourID', $this->ID) as $colour) {
+                $colour->ReferenceColourID = 0;
+                $colour->HexValue = null;
+                $colour->ContrastColour = null;
+                $colour->write();
+            }
+        });
     }
 
-    // Make sure we regenerate the CSS after a write is skipped
-    public function onAfterSkippedWrite()
+    /**
+     * Regenerate the CSS so the deleted colour is removed from the files.
+     */
+    protected function onAfterDelete(): void
     {
-        $this->generateCSS();
+        parent::onAfterDelete();
+
+        Helper::generateCSSFiles();
     }
 }
