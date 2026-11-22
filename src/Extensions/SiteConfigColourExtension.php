@@ -7,7 +7,6 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
-use SilverStripe\Forms\GridField\GridFieldEditButton;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\ReadonlyField;
@@ -53,7 +52,6 @@ class SiteConfigColourExtension extends Extension
 
         $coloursConfig = GridFieldConfig_RecordEditor::create(50);
         $coloursConfig->addComponent(GridFieldOrderableRows::create('SortOrder'));
-        $coloursConfig->removeComponentsByType(GridFieldEditButton::class);
         $coloursField = GridField::create('Colours', 'Colours', $this->getColoursForCMS(), $coloursConfig);
         $fields->addFieldToTab('Root.Customization.ColourPalette', $coloursField);
 
